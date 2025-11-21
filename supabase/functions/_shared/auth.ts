@@ -43,3 +43,4 @@ export async function requireAuthUser(
   return { id: data.user.id, email: data.user.email };
 }
 
+

@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+  "contracts/vault",
+  "contracts/factory",
+  "contracts/common",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["VineFi Team"]
+repository = "https://github.com/VineFi/wine-fi"
+
+[workspace.dependencies]
+soroban-sdk = "22.0.3"
+soroban-token-sdk = "22.0.3"
+soroswap-library = "2.0.0"
+vinifica-strategy-core = { path = "../examples/contracts/strategies/core", package = "vinifica-strategy-core" }
+common = { path = "contracts/common", package = "common" }
+vinifica-vault = { path = "contracts/vault", package = "vinifica-vault" }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+# For more information about this profile see https://soroban.stellar.org/docs/basic-tutorials/logging#cargotoml-profile
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true

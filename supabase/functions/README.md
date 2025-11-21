@@ -1,305 +1,217 @@
-# Supabase Edge Functions for Wine Tokenization
+# Supabase Edge Functions for Wine Traceability
 
-This directory contains Supabase Edge Functions that orchestrate the Winefy wine token lifecycle—from preparing a wine lot to distributing token proceeds.
+This directory now hosts the backend services for the premium wine traceability MVP. Each function focuses on minting bottles as NFTs on Soroban, logging supply-chain events, updating ownership, and exposing read APIs for QR scans. Custodial wallets remain available for zero-friction logins, while the previous investment/tokenization endpoints have been removed.
 
-## Functions
+## Traceability Functions
 
-1. **prepare-token** – Registers a wine lot, provisions custody wallets, and prepares Stellar trustlines.
-2. **status** – Returns the current wine lot lifecycle status plus marketplace metadata.
-3. **emission-xdr** – Produces unsigned Stellar XDR for winery-controlled issuance.
-4. **submit-signed** – Submits the signed emission transaction and records on-chain hashes.
-5. **distribute** – Splits minted supply between winery, platform treasury, and reserve pools.
-6. **list-distributed-tokens** – Provides marketplace-ready listings via the `wine_marketplace_view`.
+1. **mint-bottle** – Creates a bottle NFT via the `BottleFactory` contract and persists metadata/QR mapping in Supabase.
+2. **log-event** – Records `Bottling`, `Shipped`, `Received`, or `Scanned` events via the `TraceabilityLog` contract and DB.
+3. **transfer-bottle** – Verifies current ownership, executes the on-chain transfer, and logs shipment events.
+4. **get-bottle-traceability** – Public endpoint used by QR scanners to fetch bottle metadata + full history.
+5. **list-bottles** – Filters bottles by lot, winery, or owner; returns latest event snapshot for dashboards.
+
+## Custodial Wallet Functions
+
+6. **wallets-provision** – Authenticated endpoint that provisions an “invisible” Stellar wallet for a Supabase user.
+7. **wallets-default** – Returns the caller’s wallet (auto-creates if missing) for seamless FE initialization.
+8. **wallets-sign-payment** – Rate-limited signer that submits payments or returns signed XDRs from the custodial wallet.
+
+## Deprecated Functions (Removed)
+
+The family of tokenization endpoints has been deleted to avoid confusion:
+- ~~**prepare-token**~~ – superseded by `mint-bottle`.
+- ~~**status**~~ – replaced by `get-bottle-traceability`.
+- ~~**emission-xdr**~~ – no longer needed.
+- ~~**submit-signed**~~ – no longer needed.
+- ~~**distribute**~~ – no longer needed.
+- ~~**list-distributed-tokens**~~ – superseded by `list-bottles`.
+- ~~**create-reward**~~ – legacy rewards, removed.
 
 ## Setup
 
 ### 1. Environment Variables
 
-Set these environment variables in your Supabase project:
-
+**Variables REQUERIDAS** (las provee Supabase automáticamente):
 ```bash
-# Supabase (automatically available)
-SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Stellar Network Configuration
-STELLAR_NETWORK=PUBLIC  # or TESTNET, FUTURENET
-HORIZON_URL=https://horizon.stellar.org  # Optional, auto-configured based on STELLAR_NETWORK
-
-# Platform Configuration
-PLATFORM_TREASURY_PUBLIC_KEY=GXXXXX...  # Platform treasury public key
-PLATFORM_FUNDING_SECRET_KEY=SXXXXX...   # Secret key for funding distribution accounts (optional)
-PLATFORM_STORAGE_BUCKET=wine-lots      # Storage bucket for lot paperwork/media
-SUPABASE_WINE_STORAGE_URL=https://...  # Base URL exposing stored documentation assets
-
-# Encryption
-ENCRYPTION_KEY=your-256-bit-encryption-key  # Must be exactly 32 bytes or will be hashed to 32 bytes
+SUPABASE_URL=...                # Automático
+SUPABASE_SERVICE_ROLE_KEY=...   # Automático
 ```
+
+**Variables OPCIONALES pero RECOMENDADAS**:
+```bash
+# Stellar Network
+STELLAR_NETWORK=TESTNET         # Usa PUBLIC en producción
+# (HORIZON_URL se setea solo, puedes override)
+# HORIZON_URL=https://horizon-testnet.stellar.org
+# Soroban RPC (opcional, auto-default segun red)
+# SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+
+# Custodial wallet crypto
+ENCRYPTION_KEY=<openssl rand -base64 32>   # Obligatoria si usas wallets
+
+# Rate limits (tienen defaults)
+WALLET_SIGN_LIMIT_PER_MIN=5
+WALLET_SIGN_LIMIT_PER_HOUR=50
+```
+
+**Variables para FUTURO (cuando subas los contratos a la red):**
+```bash
+BOTTLE_FACTORY_ADDRESS=CA...
+TRACEABILITY_LOG_ADDRESS=CA...
+TRANSFER_ADDRESS=CA...
+```
+
+**Opcionales (solo si usas estas features):**
+```bash
+PLATFORM_FUNDING_SECRET_KEY=S...
+PLATFORM_STORAGE_BUCKET=wine-lots
+SUPABASE_WINE_STORAGE_URL=https://...
+```
+
+**Resumen mínimo:** configura `ENCRYPTION_KEY` y (opcionalmente) `STELLAR_NETWORK`.
 
 ### 2. Database Setup
 
-Run the migrations in `supabase/migrations/` to create the wine-specific schema:
+Ejecuta las migraciones en `supabase/migrations/`:
 
-- `wine_lots`
-- `wine_token_issuances`
-- `wine_distributions`
-- `wine_marketplace_view`
-- `wine_portfolio_view`
+**Traceability tables**
+- `bottles`
+- `traceability_events`
+- `qr_code_mapping`
+- `wine_lots` (simplificado para agrupar botellas)
+
+**Views**
+- `bottle_traceability_view` – consulta rápida para `get-bottle-traceability`
+
+**Custodial wallet tables**
+- `user_wallets`
+- `wallet_activity_logs`
+
+*(Las tablas antiguas `wine_token_issuances`, `wine_distributions`, etc. se mantienen solo para compatibilidad, pero ya no se consumen.)*
 
 ### 3. Deploy Functions
 
 ```bash
-# Deploy all functions
-supabase functions deploy prepare-token
-supabase functions deploy status
-supabase functions deploy emission-xdr
-supabase functions deploy submit-signed
-supabase functions deploy distribute
-supabase functions deploy list-distributed-tokens
+# Traceability
+supabase functions deploy mint-bottle
+supabase functions deploy log-event
+supabase functions deploy transfer-bottle
+supabase functions deploy get-bottle-traceability
+supabase functions deploy list-bottles
 
-# Or deploy all at once (if supported)
-supabase functions deploy
+# Custodial wallet suite
+supabase functions deploy wallets-provision
+supabase functions deploy wallets-default
+supabase functions deploy wallets-sign-payment
 ```
 
-### 4. Set Environment Variables in Supabase
+### 4. Set Environment Variables in Supabase Dashboard
 
-In your Supabase dashboard:
+1. Entra a https://app.supabase.com → tu proyecto.  
+2. Project Settings → Edge Functions → Secrets.  
+3. Agrega al menos:
+   ```bash
+   ENCRYPTION_KEY=<openssl rand -base64 32>
+   STELLAR_NETWORK=TESTNET
+   ```
+4. Usa `openssl rand -base64 32` para generar el valor y pégalo tal cual.
+5. `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya están cargadas automáticamente.
 
-1. Go to Project Settings > Edge Functions
-2. Add the environment variables listed above
-3. Make sure `ENCRYPTION_KEY` is a secure random 32-byte string (you can generate one with: `openssl rand -base64 32`)
+## Traceability Function Details
 
-## Function Details
-
-### prepare-token
-
-**Endpoint:** `POST /functions/v1/prepare-token`
-
-**Request Body:**
-
+### mint-bottle
+**Endpoint:** `POST /functions/v1/mint-bottle` *(auth requerida)*  
+**Flujo:** valida payload → genera `bottle_id` (`{lotId}-{serial}`) → crea registro en `bottles` + `qr_code_mapping` → invoca `BottleFactory` con la wallet invisible del usuario → registra evento `Bottling` con el hash on-chain.  
+**Request mínimo:**
 ```json
 {
-  "issuerPublicKey": "G...ISSUER",
-  "tokenCode": "MENDOZA25",
-  "wineName": "Gran Reserva Malbec 2025",
-  "wineryName": "Viña Example",
-  "region": "Mendoza",
-  "country": "Argentina",
-  "vintage": 2025,
-  "bottleFormatMl": 750,
-  "bottleCount": 1200,
-  "pricePerBottleUsd": 150,
-  "custodialPartner": "WineTrust Vaults",
-  "documentationUrls": [
-    "https://storage/.../coa.pdf",
-    "https://storage/.../warehouse.jpg"
-  ],
-  "platformFeeBps": 1000,
-  "unitsPerBottle": 1,
-  "description": "Single-vineyard lot"
+  "lotId": "MALBEC-2024-001",
+  "bottleNumber": 1,
+  "wineName": "Gran Reserva Malbec",
+  "vintage": 2024,
+  "metadataUri": "ipfs://Qm...",
+  "qrCode": "QR-MALBEC-2024-001-0001"
 }
 ```
 
-**Response:**
+### log-event
+**Endpoint:** `POST /functions/v1/log-event`  
+Soporta eventos `bottling | shipped | received | scanned`. Eventos operativos requieren JWT; `scanned` puede marcar `skipAuth` para QR públicos.  
+Actualiza `traceability_events`, bumpéa `current_owner_address` en `received` y firma en el contrato `TraceabilityLog` usando la custodial wallet del actor.
 
+### transfer-bottle
+**Endpoint:** `POST /functions/v1/transfer-bottle`  
+Verifica que el usuario autenticado sea el owner actual. Ejecuta transferencia en el contrato `Transfer`, actualiza `bottles.current_owner_address` y auto registra `Shipped`. Pide `toAddress`, `description` opcional.
+
+### get-bottle-traceability
+**Endpoint:** `GET /functions/v1/get-bottle-traceability?bottleId=...` o `?qrCode=...` *(público)*  
+Devuelve:  
 ```json
 {
-  "success": true,
-  "distributionAccount": "GXXXXX...",
-  "wineLotId": "uuid",
-  "totalTokenSupply": "1200.0000000",
-  "trustlineTxHash": "tx-hash" // present when automatic trustline succeeds
+  "bottle": { ... },
+  "events": [ ... ],
+  "eventCount": 4
 }
 ```
+Si llega vía QR, inserta un evento `Scanned`. Sirve para usuarios finales.
 
-**What it does:**
+### list-bottles
+**Endpoint:** `GET /functions/v1/list-bottles?lotId=...&limit=...`  
+Filtros: `lotId`, `wineryAddress`, `currentOwnerAddress`. Retorna paginado con `latestEventType` y `latestEventTimestamp`.
 
-1. Validates winery + lot payload and issuer Stellar account.
-2. Calculates total token supply from bottles/units.
-3. Creates a dedicated distribution wallet, encrypts its secret, and stores the wine lot in `wine_lots`.
-4. Funds the wallet (friendbot on testnets or `PLATFORM_FUNDING_SECRET_KEY` on mainnet) and creates a trustline to the issuer asset.
-5. Sets the lot status to `trustline_created` once the transaction succeeds.
+## Custodial Wallet Function Details
 
-### status
+### wallets-provision
+`POST /functions/v1/wallets-provision` — requiere `Authorization: Bearer <access_token>`. Crea (o devuelve) un wallet custodial cifrando la secret con `ENCRYPTION_KEY`.
 
-**Endpoint:** `GET /functions/v1/status?code=MENDOZA25&issuer=G...ISSUER`
+### wallets-default
+`GET /functions/v1/wallets-default` — responde con metadata del wallet y crea uno “just in time” si no existe.
 
-Returns the current lot state, marketplace metadata, plus the latest issuance/distribution snapshot:
+### wallets-sign-payment
+`POST /functions/v1/wallets-sign-payment` — firma o envía pagos Stellar en nombre del usuario. Respeta `WALLET_SIGN_LIMIT_PER_MIN` y `WALLET_SIGN_LIMIT_PER_HOUR`, y registra auditoría en `wallet_activity_logs`.
 
-```json
-{
-  "status": "tokens_emitted",
-  "tokenCode": "MENDOZA25",
-  "wineryName": "Viña Example",
-  "region": "Mendoza",
-  "country": "Argentina",
-  "vintage": 2025,
-  "bottleCount": 1200,
-  "pricePerBottleUsd": 150,
-  "platformFeeBps": 1000,
-  "documentationUrls": ["https://storage/..."],
-  "distributionAccount": "G...DISTRO",
-  "trustlineTxHash": "tx-hash",
-  "emissionTxHash": "tx-hash",
-  "distributionTxHash": null,
-  "createdAt": "...",
-  "emittedAt": "...",
-  "distributedAt": null,
-  "latestIssuance": {
-    "totalSupply": "1200.0000000",
-    "pricePerUnitUsd": 150,
-    "reserveRatioBps": 1500,
-    "emissionTxHash": "tx-hash",
-    "issuedAt": "..."
-  },
-  "latestDistribution": null
-}
-```
+## Network & Security
 
-### emission-xdr
+- `STELLAR_NETWORK` admite `PUBLIC`, `TESTNET`, `FUTURENET`. El helper `getStellarNetwork()` ajusta `HORIZON_URL` automáticamente.
+- Mantén `ENCRYPTION_KEY` privado; sin él no podrás descifrar las custodial wallets.
+- Si usas `PLATFORM_FUNDING_SECRET_KEY`, asegúrate de que la cuenta tenga XLM y habilita MFA en Supabase.
 
-**Endpoint:** `POST /functions/v1/emission-xdr`
-
-Generates an unsigned payment transaction (issuer → distribution) after validating the lot:
-
-```json
-{
-  "issuerPublicKey": "G...ISSUER",
-  "tokenCode": "MENDOZA25",
-  "totalSupply": "1200.0000000",
-  "pricePerUnitUsd": 150,
-  "reserveRatioBps": 1500
-}
-```
-
-Response includes the unsigned `xdr`, the target distribution wallet, and updates `wine_token_issuances`.
-
-### submit-signed
-
-**Endpoint:** `POST /functions/v1/submit-signed`
-
-```json
-{
-  "signedXDR": "AAAA...",
-  "tokenCode": "MENDOZA25",
-  "issuerPublicKey": "G...ISSUER"
-}
-```
-
-On success the function:
-
-- Submits the transaction to Horizon.
-- Updates `wine_lots` status to `tokens_emitted`.
-- Records the hash + timestamps in both `wine_lots` and `wine_token_issuances`.
-
-### distribute
-
-**Endpoint:** `POST /functions/v1/distribute`
-
-```json
-{
-  "issuerPublicKey": "G...ISSUER",
-  "tokenCode": "MENDOZA25",
-  "wineryPayoutPublicKey": "G...WINERY",   // optional if winery keeps assets in distribution acct
-  "reservePublicKey": "G...RESERVE"       // optional reserve wallet for liquidity pools
-}
-```
-
-After verifying the lot and the minted supply, the function:
-
-1. Calculates allocations (winery/platform/reserve) based on platform fee BPS + issuance reserve ratio.
-2. Ensures each destination has the necessary trustline (auto-creates for platform treasury if `PLATFORM_TREASURY_SECRET_KEY` is set).
-3. Submits a multi-operation transaction paying each destination.
-4. Updates `wine_lots` to `distributed` and inserts an audit row in `wine_distributions`.
-
-### list-distributed-tokens
-
-**Endpoint:** `GET /functions/v1/list-distributed-tokens?limit=100&offset=0`
-
-Returns paginated rows straight from `wine_marketplace_view`:
-
-```json
-{
-  "lots": [
-    {
-      "wine_lot_id": "uuid",
-      "winery_name": "Viña Example",
-      "region": "Mendoza",
-      "country": "Argentina",
-      "vintage": 2025,
-      "bottle_count": 1200,
-      "price_per_bottle_usd": 150,
-      "token_code": "MENDOZA25",
-      "status": "distributed",
-      "total_supply": "1200.0000000",
-      "price_per_unit_usd": 150,
-      "distribution_tx_hash": "tx-hash",
-      "distribution_at": "..."
-    }
-  ],
-  "count": 1,
-  "limit": 100,
-  "offset": 0
-}
-```
-
-## Network Configuration
-
-The functions automatically detect the network from the `STELLAR_NETWORK` environment variable:
-
-- `PUBLIC` - Mainnet (default)
-- `TESTNET` - Testnet
-- `FUTURENET` - Futurenet
-
-## Security Notes
-
-1. **ENCRYPTION_KEY**: Must be kept secret and never exposed. Used to encrypt distribution account secrets.
-2. **PLATFORM_FUNDING_SECRET_KEY**: Only needed if you want automatic account funding. Keep this secure.
-3. **PLATFORM_TREASURY_PUBLIC_KEY**: Public key is safe, but make sure the corresponding secret key is secure.
-4. **Service Role Key**: Has full database access, keep it secure.
-
-## Testing
-
-Test each function individually using curl or your frontend:
+## Testing Snippets
 
 ```bash
-# Test prepare-token
-curl -X POST https://your-project.supabase.co/functions/v1/prepare-token \
-  -H "Authorization: Bearer YOUR_ANON_KEY" \
+# Mint bottle
+curl -X POST https://<project>.supabase.co/functions/v1/mint-bottle \
+  -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
-  -d '{"artistPublicKey":"GXXXXX...","tokenCode":"TEST","tokenName":"Test Token","totalSupply":"1000000"}'
+  -d '{ "lotId":"MALBEC-2024-001","bottleNumber":1,"wineName":"Gran Reserva","vintage":2024 }'
 
-# Test status
-curl "https://your-project.supabase.co/functions/v1/status?code=TEST&issuer=GXXXXX..." \
-  -H "Authorization: Bearer YOUR_ANON_KEY"
+# Public QR fetch
+curl "https://<project>.supabase.co/functions/v1/get-bottle-traceability?qrCode=QR-MALBEC-2024-001-0001"
 ```
 
 ## Troubleshooting
 
-1. **Account funding fails**: Make sure `PLATFORM_FUNDING_SECRET_KEY` is set and the funding account has enough XLM
-2. **Trustline creation fails**: Ensure the distribution account is funded before creating trustline
-3. **Encryption errors**: Verify `ENCRYPTION_KEY` is set and is a valid string
-4. **Database errors**: Ensure all migrations have been run and tables exist
+1. **`ENCRYPTION_KEY` missing** → custodial functions fall back to 401/500. Configura el secret.
+2. **Rate limit exceeded** → revisa `wallet_activity_logs` para ver quién saturó `wallets-sign-payment`.
+3. **Traceability queries lentas** → agrega índices en `traceability_events (bottle_id, created_at)` y en `qr_code_mapping (qr_code)`.
+4. **Soroban addresses vacías** → asegúrate de haber seteado `BOTTLE_FACTORY_ADDRESS`, etc., antes de publicar en mainnet.
 
-## Flow Diagram
+## Flow Diagram (MVP)
 
 ```
-1. prepare-token
-   ├─ Validate wine lot metadata
-   ├─ Create/fund distribution wallet
-   └─ Create issuer trustline automatically
+1. mint-bottle
+   ├─ Valida payload + genera bottle_id
+   ├─ Guarda en DB y map QR
+   └─ (Próx.) invoca BottleFactory
 
-2. status (polling)
-   └─ Read combined wine lot + issuance + distribution state
+2. transfer-bottle
+   ├─ Verifica owner
+   ├─ Invoca Transfer contract
+   └─ Registra evento Shipped
 
-3. emission-xdr
-   └─ Generate issuer → distribution payment XDR
+3. log-event
+   └─ Guarda evento + sincroniza TraceabilityLog
 
-4. submit-signed
-   └─ Submit signed transaction and mark lot emitted
-
-5. distribute
-   ├─ Compute winery/platform/reserve allocations
-   ├─ Ensure trustlines exist
-   └─ Send payouts + update records
+4. get-bottle-traceability / list-bottles
+   └─ Lee vista + dispara evento Scanned (si aplica)
 ```

@@ -10,3 +10,4 @@ export default function AppProviders({
   return <CustodialWalletProvider>{children}</CustodialWalletProvider>;
 }
 
+

@@ -1,0 +1,1 @@
+pub(crate) const MAX_vinifica_FEE: u32 = 9000;

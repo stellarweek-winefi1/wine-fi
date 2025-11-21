@@ -1,0 +1,38 @@
+{
+  "name": "contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "docker-compose run --rm --no-deps vinifica-soroban make build",
+    "deploy-factory": "tsc && node dist/deploy_factory.js",
+    "deploy-blend": "tsc && node dist/strategies/deploy_blend.js",
+    "deploy-strategies": "tsc && node dist/strategies/deploy_strategies.js",
+    "deploy-vault": "tsc && node dist/deploy_vault.js",
+    "multi-deploy-blend": "tsc && node dist/strategies/multi_deploy_blend.js",
+    "publish-addresses": "tsc && node dist/publish_addresses.js",
+    "test": "tsc && node dist/tests/mainTest.js",
+    "dev-blend": "tsc && node dist/tests/blend/dev.js",
+    "test-blend-strategy": "tsc && node dist/tests/blend/test_strategy.js",
+    "test-blend-vault": "tsc && node dist/tests/blend/test_vault.js",
+    "test-deployed-blend-vault": "tsc && node dist/tests/blend/test_deployed_vault.js",
+    "count-lines": "tsc && node dist/count-lines.js",
+    "vault-example": "tsc && node dist/vault_usage_example.js"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@stellar/tsconfig": "^1.0.2",
+    "@types/node": "^22.18.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^14.0.0",
+    "dotenv": "^16.4.5"
+  }
+}

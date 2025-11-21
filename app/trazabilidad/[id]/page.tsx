@@ -14,28 +14,30 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
-type BottleTraceabilityResponse = {
+type LotTraceabilityResponse = {
   success?: boolean;
-  bottle?: BottleData | null;
+  lot?: LotData | null;
   events?: TraceEvent[];
   eventCount?: number;
   error?: string;
 };
 
-type BottleData = {
+type LotData = {
   id: string;
-  bottleId: string;
   lotId: string | null;
-  bottleNumber: number | null;
-  wineryAddress: string | null;
-  currentOwnerAddress: string | null;
-  wineName: string | null;
-  vintage: number | null;
+  wineryName: string | null;
   region: string | null;
   country: string | null;
-  metadataUri: string | null;
-  qrCode: string | null;
-  stellarTokenAddress: string | null;
+  appellation: string | null;
+  vineyard: string | null;
+  vintage: number | null;
+  bottleFormatMl: number | null;
+  bottleCount: number | null;
+  description: string | null;
+  tokenCode: string | null;
+  status: string | null;
+  documentationUrls: string[] | null;
+  tokenMetadata: Record<string, any> | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -114,19 +116,30 @@ export default function TrazabilidadPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
 
-  const qrCodeParam = searchParams.get("qr");
+  const lotIdParam = searchParams.get("lotId");
+  const wineLotIdParam = searchParams.get("wineLotId");
   const routeIdentifier = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const identifierValue = (qrCodeParam || routeIdentifier || "").trim();
-  const identifierType = qrCodeParam ? "qrCode" : "bottleId";
+  const identifierValue = (lotIdParam || wineLotIdParam || routeIdentifier || "").trim();
+  
+  // Determine identifier type
+  let identifierType: string;
+  let identifierValueToUse: string;
+  if (wineLotIdParam) {
+    identifierType = "wineLotId";
+    identifierValueToUse = wineLotIdParam;
+  } else {
+    identifierType = "lotId";
+    identifierValueToUse = identifierValue;
+  }
 
-  const [bottle, setBottle] = useState<BottleData | null>(null);
+  const [lot, setLot] = useState<LotData | null>(null);
   const [events, setEvents] = useState<TraceEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchTraceability = useCallback(async () => {
-    if (!identifierValue) {
-      setErrorMessage("Falta el identificador o QR de la botella.");
+    if (!identifierValueToUse) {
+      setErrorMessage("Falta el identificador del lote.");
       setIsLoading(false);
       return;
     }
@@ -146,7 +159,7 @@ export default function TrazabilidadPage() {
       setIsLoading(true);
       setErrorMessage(null);
 
-      const endpoint = `${supabaseUrl}/functions/v1/get-bottle-traceability?${identifierType}=${encodeURIComponent(identifierValue)}`;
+      const endpoint = `${supabaseUrl}/functions/v1/get-bottle-traceability?${identifierType}=${encodeURIComponent(identifierValueToUse)}`;
       const response = await fetch(endpoint, {
         headers: {
           "Content-Type": "application/json",
@@ -154,20 +167,20 @@ export default function TrazabilidadPage() {
         },
       });
 
-      const payload = (await response.json()) as BottleTraceabilityResponse;
+      const payload = (await response.json()) as LotTraceabilityResponse;
 
       if (!response.ok) {
         throw new Error(payload.error || "No pudimos obtener la trazabilidad.");
       }
 
-      if (!payload.bottle) {
-        throw new Error("No encontramos datos para esta botella.");
+      if (!payload.lot) {
+        throw new Error("No encontramos datos para este lote.");
       }
 
-      setBottle(payload.bottle);
+      setLot(payload.lot);
       setEvents(payload.events || []);
     } catch (error) {
-      setBottle(null);
+      setLot(null);
       setEvents([]);
       setErrorMessage(
         error instanceof Error
@@ -177,7 +190,7 @@ export default function TrazabilidadPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [identifierType, identifierValue]);
+  }, [identifierType, identifierValueToUse]);
 
   useEffect(() => {
     fetchTraceability();
@@ -198,26 +211,26 @@ export default function TrazabilidadPage() {
     [events],
   );
 
-  const bottleLocation = useMemo(() => {
-    if (!bottle) return "Ubicación no disponible";
-    const parts = [bottle.region, bottle.country].filter(Boolean);
+  const lotLocation = useMemo(() => {
+    if (!lot) return "Ubicación no disponible";
+    const parts = [lot.region, lot.country].filter(Boolean);
     return parts.length ? parts.join(", ") : "Ubicación no disponible";
-  }, [bottle]);
+  }, [lot]);
 
   const heroDescription = useMemo(() => {
-    if (!bottle) {
+    if (!lot) {
       return "Cargando trazabilidad verificada en la red Stellar.";
     }
 
     const pieces = [
-      bottle.wineName ? `Botella ${bottle.wineName}` : null,
-      bottleLocation !== "Ubicación no disponible" ? bottleLocation : null,
-      bottle.bottleNumber ? `N.º ${bottle.bottleNumber}` : null,
-      bottle.lotId ? `Lote ${bottle.lotId}` : null,
+      lot.wineryName ? `${lot.wineryName}` : null,
+      lot.vintage ? `Cosecha ${lot.vintage}` : null,
+      lotLocation !== "Ubicación no disponible" ? lotLocation : null,
+      lot.bottleCount ? `${lot.bottleCount} botellas` : null,
     ].filter(Boolean);
 
-    return pieces.join(" • ") || "Detalle de botella registrado en la red.";
-  }, [bottle, bottleLocation]);
+    return pieces.join(" • ") || "Detalle de lote registrado en la red.";
+  }, [lot, lotLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -250,10 +263,10 @@ export default function TrazabilidadPage() {
                   <Wine className="w-10 h-10" />
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-bold">
-                      {bottle?.wineName || "Botella en verificación"}
+                      {lot?.wineryName || "Lote en verificación"}
                     </h1>
                     <p className="text-gray-300">
-                      {shortenAddress(bottle?.wineryAddress)}
+                      {lot?.region && lot?.country ? `${lot.region}, ${lot.country}` : lot?.lotId || "Lote de vino"}
                     </p>
                   </div>
                 </div>
@@ -273,17 +286,17 @@ export default function TrazabilidadPage() {
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Cosecha</p>
                       <p className="font-semibold">
-                        {bottle?.vintage ?? "Sin dato"}
+                        {lot?.vintage ?? "Sin dato"}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Ubicación</p>
-                      <p className="font-semibold">{bottleLocation}</p>
+                      <p className="font-semibold">{lotLocation}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Propietario</p>
+                      <p className="text-xs text-gray-400 mb-1">Botellas</p>
                       <p className="font-semibold">
-                        {shortenAddress(bottle?.currentOwnerAddress)}
+                        {lot?.bottleCount ?? "Sin dato"}
                       </p>
                     </div>
                   </div>
@@ -302,7 +315,7 @@ export default function TrazabilidadPage() {
                       Página Pública de Trazabilidad
                     </p>
                     <p className="text-sm text-blue-700">
-                      Consulta en tiempo real la historia completa de la botella
+                      Consulta en tiempo real la historia completa del lote
                       usando los Edge Functions de Supabase.
                     </p>
                   </div>
@@ -381,7 +394,7 @@ export default function TrazabilidadPage() {
                   </div>
                 ) : (
                   <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg p-6 text-center text-gray-500">
-                    No hay eventos registrados todavía para esta botella.
+                    No hay eventos registrados todavía para este lote.
                   </div>
                 )}
               </div>
@@ -395,18 +408,12 @@ export default function TrazabilidadPage() {
                 <p className="text-sm text-gray-600 mb-4">
                   ID del Lote:{" "}
                   <span className="font-mono font-semibold">
-                    {bottle?.lotId || "Sin asignar"}
+                    {lot?.lotId || lot?.tokenCode || "Sin asignar"}
                   </span>
                 </p>
                 <div className="bg-white border-2 border-gray-300 rounded-lg p-6 inline-block">
                   <div className="w-32 h-32 flex items-center justify-center">
-                    {bottle?.qrCode ? (
-                      <div className="text-xs text-gray-600 break-all">
-                        {bottle.qrCode}
-                      </div>
-                    ) : (
-                      <QrCode className="w-24 h-24 text-gray-400" />
-                    )}
+                    <QrCode className="w-24 h-24 text-gray-400" />
                   </div>
                 </div>
               </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon, Download, QrCode } from "lucide-react";
+import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon, Download, QrCode, Loader2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 const steps = [
   {
@@ -57,6 +58,9 @@ export default function NuevoLotePage() {
   const [isCertified, setIsCertified] = useState(false);
   const [wttToken, setWttToken] = useState<string>("");
   const [lotId, setLotId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [savedLotId, setSavedLotId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Validation functions
@@ -156,18 +160,205 @@ export default function NuevoLotePage() {
     return `${wineNameSlug}-${timestamp}`;
   };
 
-  const handleCertifyLot = () => {
-    // Generate Certificate token and lot ID
-    const token = generateWTTToken();
-    const id = generateLotId();
-    
-    setWttToken(token);
-    setLotId(id);
-    setIsCertified(true);
-    
-    // In a real app, this would make an API call to create the Certificate
-    console.log("Certificate Token generated:", token);
-    console.log("Lot ID:", id);
+  const uploadFileToStorage = async (file: File, lotId: string, index: number): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${lotId}/${Date.now()}-${index}.${fileExt}`;
+      const filePath = fileName;
+
+      const { data, error } = await supabaseClient.storage
+        .from('wine-lots')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('Error uploading file:', error);
+        // If bucket doesn't exist, log a helpful message
+        if (error.message.includes('not found') || error.message.includes('Bucket')) {
+          console.warn('Storage bucket "wine-lots" may not exist. Please create it in Supabase Storage settings.');
+        }
+        return null;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabaseClient.storage
+        .from('wine-lots')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error in uploadFileToStorage:', error);
+      return null;
+    }
+  };
+
+  const handleCertifyLot = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Generate Certificate token and lot ID
+      const token = generateWTTToken();
+      const id = generateLotId();
+
+      // Extract region and country from region field (format: "City, Country")
+      const regionParts = formData.region.split(',').map(s => s.trim());
+      const region = regionParts[0] || formData.region;
+      const country = regionParts[1] || 'Unknown';
+
+      // Upload files to Supabase Storage
+      const documentationUrls: string[] = [];
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const url = await uploadFileToStorage(uploadedFiles[i].file, id, i);
+        if (url) {
+          documentationUrls.push(url);
+        }
+      }
+
+      // Prepare lot data for Supabase
+      // Note: After migration 20241122_bottles_traceability, these fields were removed:
+      // - price_per_bottle_usd
+      // - distribution_public_key
+      // - distribution_secret_encrypted
+      // - distribution_tx_hash
+      // - distributed_at
+      // - platform_fee_bps
+      const lotData = {
+        lot_id: id,
+        winery_name: formData.wineName,
+        region: region,
+        country: country,
+        vintage: parseInt(formData.vintage),
+        bottle_count: parseInt(formData.bottleCount),
+        total_bottles: parseInt(formData.bottleCount),
+        bottle_format_ml: 750, // Default or make it configurable
+        description: formData.description || null,
+        documentation_urls: documentationUrls,
+        token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
+        issuer_public_key: 'TBD', // Placeholder - will be filled when token is issued (required field)
+        status: 'created',
+        token_metadata: {
+          varietal: formData.varietal,
+          wineName: formData.wineName,
+          priceUSDC: parseFloat(formData.priceUSDC), // Store price in metadata since column was removed
+        },
+      };
+
+      // Insert into Supabase
+      let finalLotId: string | null = null;
+      const { data: insertedLot, error: insertError } = await supabaseClient
+        .from('wine_lots')
+        .insert(lotData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        // Check if error is related to missing columns (lot_id, total_bottles) from migration
+        const isSchemaCacheError = insertError.message.includes('lot_id') || 
+                                  insertError.message.includes('total_bottles') ||
+                                  insertError.message.includes('schema cache');
+        
+        if (isSchemaCacheError) {
+          // Try inserting without new columns (migration not applied yet)
+          const legacyLotData = {
+            winery_name: formData.wineName,
+            region: region,
+            country: country,
+            vintage: parseInt(formData.vintage),
+            bottle_count: parseInt(formData.bottleCount),
+            bottle_format_ml: 750,
+            description: formData.description || null,
+            documentation_urls: documentationUrls || [],
+            token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
+            issuer_public_key: 'TBD', // Required field - placeholder until token is issued
+            // These fields may still be required by old schema
+            distribution_public_key: 'TBD',
+            distribution_secret_encrypted: 'TBD',
+            price_per_bottle_usd: parseFloat(formData.priceUSDC),
+            platform_fee_bps: 1000,
+            status: 'created',
+            token_metadata: {
+              varietal: formData.varietal,
+              wineName: formData.wineName,
+              priceUSDC: parseFloat(formData.priceUSDC),
+              lot_id: id, // Store lot_id in metadata for now
+            },
+          };
+
+          const { data: retryData, error: retryError } = await supabaseClient
+            .from('wine_lots')
+            .insert(legacyLotData)
+            .select()
+            .single();
+
+          if (retryError) {
+            throw new Error(`Error saving lot: ${retryError.message}. Please ensure migrations are applied.`);
+          }
+          
+          finalLotId = retryData.id;
+          setSavedLotId(retryData.id);
+        } else if (insertError.message.includes('null value') || insertError.message.includes('violates not-null')) {
+          // Try inserting with minimal required fields (migration applied)
+          const simplifiedLotData = {
+            lot_id: id,
+            winery_name: formData.wineName,
+            region: region,
+            country: country,
+            vintage: parseInt(formData.vintage),
+            bottle_count: parseInt(formData.bottleCount),
+            total_bottles: parseInt(formData.bottleCount),
+            bottle_format_ml: 750,
+            description: formData.description || null,
+            documentation_urls: documentationUrls || [],
+            token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
+            issuer_public_key: 'TBD', // Required field - placeholder until token is issued
+            status: 'created',
+            token_metadata: {
+              varietal: formData.varietal,
+              wineName: formData.wineName,
+              priceUSDC: parseFloat(formData.priceUSDC), // Store price in metadata
+            },
+          };
+
+          const { data: retryData, error: retryError } = await supabaseClient
+            .from('wine_lots')
+            .insert(simplifiedLotData)
+            .select()
+            .single();
+
+          if (retryError) {
+            throw new Error(`Error saving lot: ${retryError.message}`);
+          }
+          
+          finalLotId = retryData.id;
+          setSavedLotId(retryData.id);
+        } else {
+          throw new Error(`Error saving lot: ${insertError.message}`);
+        }
+      } else {
+        finalLotId = insertedLot.id;
+        setSavedLotId(insertedLot.id);
+      }
+
+      // Set state for success UI
+      setWttToken(token);
+      setLotId(id);
+      setIsCertified(true);
+      
+      console.log("Lot saved successfully:", { token, id, dbLotId: finalLotId });
+    } catch (error) {
+      console.error("Error certifying lot:", error);
+      setSubmitError(
+        error instanceof Error 
+          ? error.message 
+          : "Ocurrió un error al certificar el lote. Por favor, intenta nuevamente."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDownloadQR = () => {
@@ -718,11 +909,33 @@ export default function NuevoLotePage() {
                     </div>
                   </div>
                 </div>
+                {submitError && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-red-900 mb-1">Error al certificar</p>
+                      <p className="text-sm text-red-700">{submitError}</p>
+                    </div>
+                  </div>
+                )}
                 <button 
                   onClick={handleCertifyLot}
-                  className="w-full bg-black text-white py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
+                  disabled={isSubmitting}
+                  className={cn(
+                    "w-full py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center gap-2",
+                    isSubmitting
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-black text-white hover:bg-gray-800"
+                  )}
                 >
-                  Generar Certificado de Vino y Certificar Lote
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    "Generar Certificado de Vino y Certificar Lote"
+                  )}
                 </button>
               </div>
             </div>
@@ -809,6 +1022,14 @@ export default function NuevoLotePage() {
                       >
                         Ver Detalles del Lote
                       </Link>
+                      {savedLotId && (
+                        <Link
+                          href={`/trazabilidad/${lotId}`}
+                          className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
+                        >
+                          Ver Trazabilidad
+                        </Link>
+                      )}
                       <Link
                         href="/lotes"
                         className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 text-black px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
@@ -859,4 +1080,3 @@ export default function NuevoLotePage() {
     </main>
   );
 }
-
