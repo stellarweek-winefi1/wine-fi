@@ -1,6 +1,6 @@
-# 🍷 VineFi – Trazabilidad Verificable de Vinos en Blockchain
+# 🍷 Winefy – Trazabilidad Verificable de Vinos en Blockchain
 
-VineFi es una plataforma de trazabilidad blockchain para vinos premium que permite a bodegas, distribuidores e importadores registrar y verificar cada etapa del ciclo de vida de un lote de vino, desde la cosecha hasta el consumidor final, utilizando Wine Traceability Tokens (WTT) en Stellar.
+Winefy es una plataforma de trazabilidad blockchain para vinos premium que permite a bodegas, distribuidores e importadores registrar y verificar cada etapa del ciclo de vida de un lote de vino, desde la cosecha hasta el consumidor final, utilizando Wine Traceability Tokens (WTT) en Stellar.
 
 ---
 
@@ -99,7 +99,7 @@ La industria del vino enfrenta desafíos críticos de trazabilidad y autenticida
 
 ### 3.1 Main Idea
 
-VineFi es una plataforma de trazabilidad blockchain que permite a bodegas crear Wine Traceability Tokens (WTT) en Stellar para representar lotes de vino de forma inmutable y verificable. Cada lote puede tener eventos de trazabilidad registrados en blockchain (cosecha, vinificación, barrica, embotellado, transporte, etc.), y cada botella puede tener un QR único que permite a los consumidores verificar la autenticidad y ver la historia completa del producto.
+Winefy es una plataforma de trazabilidad blockchain que permite a bodegas crear Wine Traceability Tokens (WTT) en Stellar para representar lotes de vino de forma inmutable y verificable. Cada lote puede tener eventos de trazabilidad registrados en blockchain (cosecha, vinificación, barrica, embotellado, transporte, etc.), y cada botella puede tener un QR único que permite a los consumidores verificar la autenticidad y ver la historia completa del producto.
 
 **Core user journey:**
 
@@ -110,7 +110,7 @@ VineFi es una plataforma de trazabilidad blockchain que permite a bodegas crear 
 
 ### 3.2 Why Stellar?
 
-**Stellar Network es ideal para VineFi porque:**
+**Stellar Network es ideal para Winefy porque:**
 
 - **Inmutabilidad garantizada**: Una vez registrados, los eventos no pueden ser alterados, garantizando la integridad de los datos
 - **Transparencia verificable**: Cualquiera puede auditar los eventos del lote en la blockchain pública
@@ -343,7 +343,7 @@ By the end of Stellar Hack+, we will consider our MVP successful if:
 
 ## 7. Team
 
-- **Team name**: VineFi
+- **Team name**: Winefy
 
 - **Members and roles**:
   - **Mateo Quintana** – Product and Marketing

@@ -6,8 +6,8 @@ import Navigation from "@/components/Navigation";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VineFi - Invierte en Vinos Premium",
-  description: "Invierte en vinos premium de Chile, Argentina (Mendoza) y USA desde $50. Digitalización respaldada en Stellar.",
+  title: "Winefy - Trazabilidad Verificable de Vinos en Blockchain",
+  description: "Plataforma de trazabilidad blockchain para vinos premium. Certifica lotes, registra eventos y verifica autenticidad con Wine Traceability Tokens (WTT) en Stellar.",
 };
 
 export default function RootLayout({

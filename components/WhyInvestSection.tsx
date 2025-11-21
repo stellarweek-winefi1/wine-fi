@@ -1,28 +1,28 @@
 "use client";
 
-import { Wine, TrendingUp, Shield, Globe, BarChart3 } from "lucide-react";
+import { Wine, Shield, Globe, QrCode, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 const benefits = [
   {
-    icon: TrendingUp,
-    title: "Apreciación con el Tiempo",
-    description: "Los vinos de alta calidad tienden a aumentar su valor con el tiempo",
+    icon: Shield,
+    title: "Autenticidad Garantizada",
+    description: "Verifica que cada botella es auténtica mediante QR codes y blockchain",
   },
   {
-    icon: Shield,
-    title: "Resistente a la Inflación",
-    description: "Protege tu patrimonio de la volatilidad de los mercados tradicionales",
+    icon: CheckCircle,
+    title: "Trazabilidad Completa",
+    description: "Rastrea cada etapa del proceso desde la cosecha hasta el consumidor final",
   },
   {
     icon: Globe,
-    title: "Demanda Global",
-    description: "Activo con demanda internacional y oferta limitada",
+    title: "Transparencia Verificable",
+    description: "Cualquiera puede auditar los eventos del lote en la blockchain pública",
   },
   {
-    icon: BarChart3,
-    title: "Diversificación",
-    description: "Inversión tangible, escasa y con potencial de crecimiento constante",
+    icon: QrCode,
+    title: "Verificación Instantánea",
+    description: "Escanea un QR y obtén información completa verificable en tiempo real",
   },
 ];
 
@@ -46,7 +46,7 @@ export default function WhyInvestSection() {
               id="why-invest-heading"
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black text-center"
             >
-              ¿Por qué invertir en vinos premium?
+              ¿Por qué trazabilidad blockchain?
             </h2>
           </div>
         </motion.div>
@@ -61,18 +61,18 @@ export default function WhyInvestSection() {
             className="space-y-4 sm:space-y-5 md:space-y-6 px-4 lg:px-0"
           >
             <p className="text-base sm:text-lg text-black leading-relaxed">
-              Invertir en vino no es solo una pasión: es una estrategia inteligente
-              para proteger y hacer crecer tu patrimonio. Los vinos de alta calidad
-              tienden a apreciarse con el tiempo, son resistentes a la inflación y no
-              dependen de la volatilidad de los mercados tradicionales.
+              La trazabilidad blockchain garantiza la autenticidad y transparencia de cada lote de vino.
+              Cada evento queda registrado de forma inmutable, desde la cosecha hasta el consumidor final,
+              creando una cadena de confianza verificable públicamente.
             </p>
             <p className="text-base sm:text-lg text-black leading-relaxed">
-              Participar en vinos premium te permite construir un activo estable,
-              respaldado por un producto real, con demanda global y oferta limitada.
+              Las bodegas pueden proteger su marca contra falsificaciones, los distribuidores pueden
+              verificar la autenticidad de los lotes recibidos, y los consumidores pueden escanear un QR
+              para conocer la historia completa del producto.
             </p>
             <p className="text-base sm:text-lg text-black leading-relaxed">
-              Es una forma de crear libertad a largo plazo, diversificando tu dinero
-              en algo tangible, escaso y con potencial de crecimiento constante.
+              Con Wine Traceability Tokens (WTT) en Stellar, cada lote tiene una identidad digital única
+              e inmutable, garantizando transparencia verificable y confianza en toda la cadena de suministro.
             </p>
           </motion.div>
 

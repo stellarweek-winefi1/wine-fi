@@ -67,17 +67,17 @@ export default function WineCard({
           <span className="text-xs sm:text-sm truncate">{region}, {country}</span>
         </div>
 
-        {/* Price and Return */}
+        {/* Lote Info */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
           <div>
-            <div className="text-xs text-black mb-1">Precio/Unidad</div>
-            <div className="text-xl sm:text-2xl font-bold text-black">${pricePerUnit}</div>
+            <div className="text-xs text-black mb-1">Total Botellas</div>
+            <div className="text-xl sm:text-2xl font-bold text-black">{total}</div>
           </div>
           <div>
-            <div className="text-xs text-black mb-1">Retorno Anual</div>
+            <div className="text-xs text-black mb-1">Estado</div>
             <div className="text-xl sm:text-2xl font-bold text-black flex items-center gap-1">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-              {annualReturn}%
+              Certificado
             </div>
           </div>
         </div>
@@ -105,11 +105,11 @@ export default function WineCard({
 
         {/* CTA Button */}
         <Link
-          href={`/mercado/${id}`}
+          href={`/lotes/${id}`}
           className="block w-full bg-black text-white text-center py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-          aria-label={`Invertir en ${name}`}
+          aria-label={`Ver trazabilidad de ${name}`}
         >
-          Invertir Ahora
+          Ver Trazabilidad
         </Link>
       </div>
     </motion.div>

@@ -65,10 +65,10 @@ export default function MercadoPage() {
         {/* Page Header */}
         <div className="text-center mb-6 sm:mb-8 md:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-black px-4">
-            Vinos Disponibles
+            Dashboard de Trazabilidad
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-black max-w-3xl mx-auto px-4">
-            Explora nuestra selección de vinos premium disponibles para inversión
+            Visualiza todos los lotes certificados y su estado de trazabilidad en tiempo real
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export default function MercadoPage() {
             <input
               id="search-wines"
               type="search"
-              placeholder="Buscar por nombre, región o tipo..."
+              placeholder="Buscar lotes por nombre, región o varietal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 rounded-xl border border-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-base sm:text-lg"
@@ -104,7 +104,7 @@ export default function MercadoPage() {
         ) : (
           <div className="text-center py-12">
             <p className="text-xl text-black mb-4">
-              No se encontraron vinos que coincidan con tu búsqueda.
+              No se encontraron lotes que coincidan con tu búsqueda.
             </p>
             {searchQuery && (
               <button
@@ -121,7 +121,7 @@ export default function MercadoPage() {
         {filteredWines.length > 0 && (
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              Mostrando {filteredWines.length} {filteredWines.length === 1 ? "vino" : "vinos"} disponible{filteredWines.length === 1 ? "" : "s"}
+              Mostrando {filteredWines.length} {filteredWines.length === 1 ? "lote" : "lotes"} certificado{filteredWines.length === 1 ? "" : "s"}
             </p>
           </div>
         )}

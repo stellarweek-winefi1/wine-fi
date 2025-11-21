@@ -1,8 +1,8 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { MapPin, TrendingUp, ArrowLeft, Calculator, CheckCircle } from "lucide-react";
+import { MapPin, TrendingUp, ArrowLeft, Clock, CheckCircle, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -49,17 +49,11 @@ const wines = [
   },
 ];
 
-export default function InvestmentPage() {
+export default function LoteDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params?.id as string;
   
   const [wine, setWine] = useState<typeof wines[0] | null>(null);
-  const [investmentAmount, setInvestmentAmount] = useState<string>("");
-  const [units, setUnits] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [lastEdited, setLastEdited] = useState<"amount" | "units" | null>(null);
 
   useEffect(() => {
     const foundWine = wines.find((w) => w.id === id);
@@ -68,96 +62,18 @@ export default function InvestmentPage() {
     }
   }, [id]);
 
-  // Calculate units from investment amount
-  useEffect(() => {
-    if (wine && investmentAmount && lastEdited === "amount") {
-      const amount = parseFloat(investmentAmount);
-      if (!isNaN(amount) && amount > 0) {
-        const calculatedUnits = Math.floor(amount / wine.pricePerUnit);
-        setUnits(calculatedUnits.toString());
-      } else {
-        setUnits("");
-      }
-    }
-  }, [investmentAmount, wine, lastEdited]);
-
-  // Calculate investment amount from units
-  useEffect(() => {
-    if (wine && units && lastEdited === "units") {
-      const numUnits = parseInt(units);
-      if (!isNaN(numUnits) && numUnits > 0) {
-        const calculatedAmount = (numUnits * wine.pricePerUnit).toFixed(2);
-        setInvestmentAmount(calculatedAmount);
-      } else {
-        setInvestmentAmount("");
-      }
-    }
-  }, [units, wine, lastEdited]);
-
-  const handleInvestmentAmountChange = (value: string) => {
-    // Allow only numbers and decimal point
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setInvestmentAmount(value);
-      setLastEdited("amount");
-    }
-  };
-
-  const handleUnitsChange = (value: string) => {
-    // Allow only integers
-    if (value === "" || /^\d+$/.test(value)) {
-      if (wine) {
-        const numUnits = parseInt(value) || 0;
-        if (numUnits > wine.available) {
-          setUnits(wine.available.toString());
-          setLastEdited("units");
-          return;
-        }
-      }
-      setUnits(value);
-      setLastEdited("units");
-    }
-  };
-
-  const handleInvest = async () => {
-    if (!wine) return;
-
-    const numUnits = parseInt(units) || 0;
-    const amount = parseFloat(investmentAmount) || 0;
-
-    if (numUnits <= 0 || amount <= 0) {
-      alert("Por favor, ingresa una cantidad válida");
-      return;
-    }
-
-    if (numUnits > wine.available) {
-      alert(`Solo hay ${wine.available} unidades disponibles`);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      setTimeout(() => {
-        router.push("/portafolio");
-      }, 2000);
-    }, 1500);
-  };
-
   if (!wine) {
     return (
       <main className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
-            <p className="text-xl text-black mb-4">Vino no encontrado</p>
+            <p className="text-xl text-black mb-4">Lote no encontrado</p>
             <Link
-              href="/mercado"
+              href="/dashboard"
               className="inline-flex items-center gap-2 text-black hover:text-gray-800 underline"
             >
               <ArrowLeft className="w-4 h-4" />
-              Volver al mercado
+              Volver al dashboard
             </Link>
           </div>
         </div>
@@ -165,42 +81,19 @@ export default function InvestmentPage() {
     );
   }
 
-  const numUnits = parseInt(units) || 0;
-  const totalAmount = numUnits * wine.pricePerUnit;
-  const projectedReturn = (totalAmount * wine.annualReturn) / 100;
-  const availabilityPercentage = (wine.available / wine.total) * 100;
-
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <Link
-          href="/mercado"
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-black hover:text-gray-800 mb-4 sm:mb-6 md:mb-8 transition-colors text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-          <span className="font-medium">Volver al mercado</span>
+          <span className="font-medium">Volver al dashboard</span>
         </Link>
 
-        {isSuccess ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border-2 border-black rounded-2xl p-6 sm:p-8 md:p-12 text-center"
-          >
-            <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-black mx-auto mb-4 sm:mb-6" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-black mb-3 sm:mb-4">
-              ¡Inversión realizada con éxito!
-            </h2>
-            <p className="text-base sm:text-lg text-black mb-6 sm:mb-8">
-              Has invertido en {numUnits} unidades de {wine.name}
-            </p>
-            <p className="text-xs sm:text-sm text-gray-600">
-              Redirigiendo a tu portafolio...
-            </p>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {/* Wine Details */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -240,169 +133,106 @@ export default function InvestmentPage() {
                   </p>
                 )}
 
-                {/* Price and Return */}
+                {/* Lote Info */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <div className="text-xs text-black mb-1">Precio/Unidad</div>
-                    <div className="text-xl sm:text-2xl font-bold text-black">${wine.pricePerUnit}</div>
+                    <div className="text-xs text-black mb-1">Total Botellas</div>
+                    <div className="text-xl sm:text-2xl font-bold text-black">{wine.total}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-black mb-1">Retorno Anual</div>
+                    <div className="text-xs text-black mb-1">Estado</div>
                     <div className="text-xl sm:text-2xl font-bold text-black flex items-center gap-1">
-                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                      {wine.annualReturn}%
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+                      Certificado
                     </div>
                   </div>
                 </div>
 
-                {/* Availability */}
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-black font-medium">Disponibles</span>
-                    <span className="font-semibold text-black">
-                      {wine.available} / {wine.total} unidades
-                    </span>
+                {/* WTT Info */}
+                <div className="mb-6 p-4 bg-black text-white rounded-lg">
+                  <div className="text-xs text-gray-300 mb-1">Wine Traceability Token (WTT)</div>
+                  <div className="text-sm font-mono font-semibold break-all">
+                    {wine.id.toUpperCase()}-WTT
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-black h-full rounded-full transition-all duration-500"
-                      style={{ width: `${availabilityPercentage}%` }}
-                      role="progressbar"
-                      aria-valuenow={wine.available}
-                      aria-valuemin={0}
-                      aria-valuemax={wine.total}
-                    />
+                  <div className="text-xs text-gray-300 mt-2">
+                    Verificado en Stellar Blockchain
                   </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Investment Form */}
+            {/* Traceability Timeline */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               className="bg-white border-2 border-black rounded-2xl p-4 sm:p-6 md:p-8"
             >
               <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-5 md:mb-6 flex items-center gap-2">
-                <Calculator className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
-                Realizar Inversión
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
+                Timeline de Trazabilidad
               </h2>
 
-              {/* Investment Amount Input */}
-              <div className="mb-4 sm:mb-5 md:mb-6">
-                <label
-                  htmlFor="investment-amount"
-                  className="block text-sm font-medium text-black mb-2"
-                >
-                  Monto de Inversión (USD)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-black font-semibold">
-                    $
-                  </span>
-                  <input
-                    id="investment-amount"
-                    type="text"
-                    inputMode="decimal"
-                    value={investmentAmount}
-                    onChange={(e) => handleInvestmentAmountChange(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full pl-7 sm:pl-8 pr-4 py-2.5 sm:py-3 rounded-lg border-2 border-black focus:outline-none focus:ring-2 focus:ring-black text-base sm:text-lg font-semibold"
-                    aria-label="Monto de inversión en dólares"
-                  />
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  Mínimo: ${wine.pricePerUnit}
-                </p>
-              </div>
-
-              {/* Units Input */}
-              <div className="mb-4 sm:mb-5 md:mb-6">
-                <label
-                  htmlFor="units"
-                  className="block text-sm font-medium text-black mb-2"
-                >
-                  Número de Unidades
-                </label>
-                <input
-                  id="units"
-                  type="text"
-                  inputMode="numeric"
-                  value={units}
-                  onChange={(e) => handleUnitsChange(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-4 py-2.5 sm:py-3 rounded-lg border-2 border-black focus:outline-none focus:ring-2 focus:ring-black text-base sm:text-lg font-semibold"
-                  aria-label="Número de unidades a comprar"
-                />
-                <p className="text-xs text-gray-600 mt-1">
-                  Máximo: {wine.available} unidades disponibles
-                </p>
-              </div>
-
-              {/* Investment Summary */}
-              {numUnits > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="bg-gray-50 border-2 border-black rounded-lg p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6"
-                >
-                  <h3 className="text-base sm:text-lg font-semibold text-black mb-3 sm:mb-4">
-                    Resumen de Inversión
-                  </h3>
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex justify-between text-sm sm:text-base text-black">
-                      <span>Unidades:</span>
-                      <span className="font-semibold">{numUnits}</span>
-                    </div>
-                    <div className="flex justify-between text-sm sm:text-base text-black">
-                      <span>Precio por unidad:</span>
-                      <span className="font-semibold">${wine.pricePerUnit}</span>
-                    </div>
-                    <div className="border-t-2 border-black pt-2 sm:pt-3 flex justify-between text-sm sm:text-base text-black">
-                      <span className="font-semibold">Total a invertir:</span>
-                      <span className="font-bold text-lg sm:text-xl">${totalAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="pt-2 sm:pt-3 border-t border-gray-300">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 text-sm sm:text-base text-black">
-                        <span className="break-words">Retorno anual estimado ({wine.annualReturn}%):</span>
-                        <span className="font-semibold text-green-600 sm:text-right">
-                          +${projectedReturn.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
+              {/* Traceability Events */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="bg-black w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-5 h-5 text-white" />
                   </div>
-                </motion.div>
-              )}
+                  <div className="flex-1">
+                    <div className="font-semibold text-black mb-1">Lote Certificado</div>
+                    <div className="text-sm text-gray-600">WTT generado en Stellar</div>
+                    <div className="text-xs text-gray-500 mt-1">Hace 2 días</div>
+                  </div>
+                </div>
 
-              {/* Invest Button */}
-              <button
-                onClick={handleInvest}
-                disabled={
-                  isSubmitting ||
-                  numUnits <= 0 ||
-                  numUnits > wine.available ||
-                  totalAmount < wine.pricePerUnit
-                }
-                className="w-full bg-black text-white text-center py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                aria-label="Confirmar inversión"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Procesando...</span>
-                  </>
-                ) : (
-                  "Confirmar Inversión"
-                )}
-              </button>
+                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="bg-black w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-black mb-1">Cosecha Registrada</div>
+                    <div className="text-sm text-gray-600">Evento registrado en blockchain</div>
+                    <div className="text-xs text-gray-500 mt-1">Hace 1 mes</div>
+                  </div>
+                </div>
 
-              {/* Info Note */}
-              <p className="text-xs text-gray-600 mt-3 sm:mt-4 text-center">
-                Al confirmar, serás redirigido para completar el pago y la transacción.
-              </p>
+                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="bg-gray-300 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-600 mb-1">En Barrica</div>
+                    <div className="text-sm text-gray-500">Proceso en curso</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Section */}
+              <div className="bg-gray-50 rounded-lg p-6 border-2 border-black text-center">
+                <QrCode className="w-16 h-16 mx-auto mb-4 text-black" />
+                <h3 className="font-semibold text-black mb-2">Código QR del Lote</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Escanea este código para verificar la autenticidad y ver la trazabilidad completa
+                </p>
+                <div className="bg-white p-4 rounded-lg border border-black inline-block">
+                  <div className="w-32 h-32 bg-black flex items-center justify-center text-white text-xs">
+                    QR Code
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  Código único: {wine.id.toUpperCase()}
+                </p>
+              </div>
+
+              {/* Verify on Blockchain */}
+              <div className="mt-6 p-4 bg-black text-white rounded-lg text-center">
+                <p className="text-sm mb-2">Verificado en Stellar Blockchain</p>
+                <p className="text-xs text-gray-300">
+                  Todos los eventos son inmutables y verificables públicamente
+                </p>
+              </div>
             </motion.div>
           </div>
-        )}
       </div>
     </main>
   );

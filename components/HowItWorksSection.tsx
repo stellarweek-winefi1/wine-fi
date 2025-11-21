@@ -6,39 +6,39 @@ import { motion } from "framer-motion";
 const features = [
   {
     icon: Wine,
-    title: "Digitaliza Vinos",
+    title: "Certifica Lotes",
     description:
-      "Convierte tu cosecha en activos digitales respaldados 1:1 por botellas reales",
+      "Registra lotes de vino con información completa y genera Wine Traceability Tokens (WTT) en Stellar",
   },
   {
     icon: TrendingUp,
-    title: "Invierte desde $50",
+    title: "Registra Eventos",
     description:
-      "Accede al mercado de vinos premium con inversiones fraccionadas",
+      "Documenta cada etapa: cosecha, vinificación, barrica, embotellado, transporte - todo en blockchain",
   },
   {
     icon: Zap,
-    title: "Transacciones Rápidas",
+    title: "Trazabilidad Inmutable",
     description:
-      "Construido en Stellar: comisiones de $0.00001 y liquidación en 3-5 segundos",
+      "Construido en Stellar: eventos registrados en 3-5 segundos con garantía de inmutabilidad",
   },
   {
     icon: Shield,
-    title: "100% Respaldado",
+    title: "Transparencia Verificable",
     description:
-      "Cada activo digital representa una botella física en bodega certificada",
+      "Cualquiera puede auditar los eventos del lote en la blockchain pública de Stellar",
   },
   {
     icon: Users,
-    title: "Para Todos",
+    title: "Validación de Roles",
     description:
-      "Diseñado para ser fácil de usar, sin necesidad de experiencia técnica",
+      "Sistema de permisos para bodegas, distribuidores e importadores con validación en blockchain",
   },
   {
     icon: ArrowLeftRight,
-    title: "Liquidez Total",
+    title: "QR de Autenticidad",
     description:
-      "Vende tus activos digitales en cualquier momento a través del mercado secundario",
+      "Cada botella tiene un QR único que permite verificar autenticidad y ver la trazabilidad completa",
   },
 ];
 
@@ -57,10 +57,10 @@ export default function HowItWorksSection() {
           transition={{ duration: 0.6 }}
         >
           <h2 id="how-it-works-heading" className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-black px-4">
-            Cómo Funciona <span className="text-black">VineFi</span>
+            Cómo Funciona <span className="text-black">Winefy</span>
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-black max-w-3xl mx-auto px-4">
-            Una plataforma simple y segura para democratizar la inversión en vinos
+            Una plataforma blockchain para certificar, rastrear y verificar la autenticidad de vinos premium
           </p>
         </motion.div>
 

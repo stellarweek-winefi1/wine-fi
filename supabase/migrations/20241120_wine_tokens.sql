@@ -1,4 +1,4 @@
--- VineFi wine token schema
+-- Winefy wine token schema
 
 -- wine_lots: metadata for each tokenized wine batch
 CREATE TABLE IF NOT EXISTS wine_lots (

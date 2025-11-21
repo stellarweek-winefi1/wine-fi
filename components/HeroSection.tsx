@@ -18,7 +18,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          Invierte en Vinos <span className="text-black">Premium</span>
+          Trazabilidad Verificable de <span className="text-black">Vinos</span>
         </motion.h1>
 
         <motion.p
@@ -27,8 +27,8 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          Invierte en vinos premium de Chile, Argentina (Mendoza) y USA desde
-          $50. Digitalización respaldada en Stellar.
+          Certifica lotes, registra eventos de trazabilidad y verifica autenticidad
+          con Wine Traceability Tokens (WTT) en blockchain Stellar.
         </motion.p>
 
         <motion.div
@@ -38,20 +38,28 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <Link
-            href="/mercado"
+            href="/dashboard"
             className="inline-flex items-center justify-center gap-2 bg-black text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl w-full sm:w-auto"
-            aria-label="Explorar mercado de vinos"
+            aria-label="Ver dashboard"
           >
-            Explorar Mercado
+            Dashboard
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
           </Link>
 
           <Link
-            href="/digitalizar"
+            href="/lotes/nuevo"
             className="inline-flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg border-2 border-black hover:bg-gray-50 transition-colors w-full sm:w-auto"
-            aria-label="Digitalizar tus vinos"
+            aria-label="Crear nuevo lote"
           >
-            Digitalizar Vinos
+            Nuevo Lote
+          </Link>
+
+          <Link
+            href="/qr"
+            className="inline-flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg border-2 border-black hover:bg-gray-50 transition-colors w-full sm:w-auto"
+            aria-label="Escanear código QR"
+          >
+            Escanear QR
           </Link>
         </motion.div>
 
@@ -63,23 +71,23 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.6 }}
         >
           <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 shadow-md border border-black">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">$340B</div>
-            <div className="text-black text-xs sm:text-sm">Mercado Global de Vinos</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">100%</div>
+            <div className="text-black text-xs sm:text-sm">Inmutable</div>
           </div>
 
           <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 shadow-md border border-black">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">7-10%</div>
-            <div className="text-black text-xs sm:text-sm">Retorno Anual Promedio</div>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 shadow-md border border-black">
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">$50</div>
-            <div className="text-black text-xs sm:text-sm">Inversión Mínima</div>
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">24/7</div>
+            <div className="text-black text-xs sm:text-sm">Verificación Pública</div>
           </div>
 
           <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 shadow-md border border-black">
             <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">3-5s</div>
-            <div className="text-black text-xs sm:text-sm">Tiempo de Transacción</div>
+            <div className="text-black text-xs sm:text-sm">Registro en Blockchain</div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 shadow-md border border-black">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-1 sm:mb-2">QR</div>
+            <div className="text-black text-xs sm:text-sm">Autenticidad Instantánea</div>
           </div>
         </motion.div>
       </div>

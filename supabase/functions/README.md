@@ -1,6 +1,6 @@
 # Supabase Edge Functions for Wine Tokenization
 
-This directory contains Supabase Edge Functions that orchestrate the VineFi wine token lifecycle—from preparing a wine lot to distributing token proceeds.
+This directory contains Supabase Edge Functions that orchestrate the Winefy wine token lifecycle—from preparing a wine lot to distributing token proceeds.
 
 ## Functions
 

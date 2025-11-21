@@ -15,7 +15,7 @@ This repository uses the recommended structure for a Soroban project:
 └── README.md
 ```
 
-- New Soroban contracts can be put in `contracts`, each in their own directory. There is already a `hello_world` contract in there to get you started, plus the `wine_lot_manager` contract used by VineFi.
+- New Soroban contracts can be put in `contracts`, each in their own directory. There is already a `hello_world` contract in there to get you started, plus the `wine_lot_manager` contract used by Winefy.
 - `wine_lot_manager`: manages wine lot metadata and enforces supply caps for each tokenized batch (init, mint, and sale accounting helpers).
 
 ## Common Commands

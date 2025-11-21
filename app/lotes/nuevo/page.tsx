@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon } from "lucide-react";
-import { motion } from "framer-motion";
+import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon, Download, QrCode } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 const steps = [
   {
@@ -38,7 +41,7 @@ interface UploadedFile {
   preview?: string;
 }
 
-export default function DigitalizarPage() {
+export default function NuevoLotePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     wineName: "",
@@ -46,16 +49,168 @@ export default function DigitalizarPage() {
     vintage: "",
     description: "",
     bottleCount: "",
-    pricePerBottle: "",
+    varietal: "",
   });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isCertified, setIsCertified] = useState(false);
+  const [wttToken, setWttToken] = useState<string>("");
+  const [lotId, setLotId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Validation functions
+  const isStep1Complete = () => {
+    return !!(
+      formData.wineName.trim() &&
+      formData.varietal.trim() &&
+      formData.region.trim() &&
+      formData.vintage.trim() &&
+      formData.bottleCount.trim() &&
+      parseInt(formData.bottleCount) > 0
+    );
+  };
+
+  const isStep2Complete = () => {
+    return uploadedFiles.length > 0;
+  };
+
+  const isStep3Complete = () => {
+    // Step 3 is just informational, so it's always complete if we reached it
+    return true;
+  };
+
+  const canProceedToStep = (step: number) => {
+    if (step <= currentStep) return true; // Can always go back or stay on current
+    if (step === 2) return isStep1Complete();
+    if (step === 3) return isStep1Complete() && isStep2Complete();
+    if (step === 4) return isStep1Complete() && isStep2Complete() && isStep3Complete();
+    return false;
+  };
+
+  const validateCurrentStep = () => {
+    const errors: Record<string, string> = {};
+    
+    if (currentStep === 1) {
+      if (!formData.wineName.trim()) {
+        errors.wineName = "El nombre del lote es requerido";
+      }
+      if (!formData.varietal.trim()) {
+        errors.varietal = "El varietal es requerido";
+      }
+      if (!formData.region.trim()) {
+        errors.region = "La región es requerida";
+      }
+      if (!formData.vintage.trim()) {
+        errors.vintage = "La añada es requerida";
+      }
+      if (!formData.bottleCount.trim()) {
+        errors.bottleCount = "La cantidad de botellas es requerida";
+      } else if (parseInt(formData.bottleCount) <= 0) {
+        errors.bottleCount = "La cantidad debe ser mayor a 0";
+      }
+    } else if (currentStep === 2) {
+      if (uploadedFiles.length === 0) {
+        errors.files = "Debes subir al menos un archivo";
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (validateCurrentStep()) {
+      if (currentStep < 4) {
+        setCurrentStep((prev) => prev + 1);
+        setValidationErrors({});
+      }
+    }
+  };
+
+  const generateWTTToken = () => {
+    // Generate a unique WTT token based on wine name and timestamp
+    const timestamp = Date.now();
+    const wineNameSlug = formData.wineName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "-")
+      .substring(0, 20);
+    const token = `${wineNameSlug}-${formData.vintage}-WTT-${timestamp.toString().slice(-6)}`;
+    return token;
+  };
+
+  const generateLotId = () => {
+    // Generate a unique lot ID
+    const timestamp = Date.now();
+    const wineNameSlug = formData.wineName
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-")
+      .substring(0, 20);
+    return `${wineNameSlug}-${timestamp}`;
+  };
+
+  const handleCertifyLot = () => {
+    // Generate WTT token and lot ID
+    const token = generateWTTToken();
+    const id = generateLotId();
+    
+    setWttToken(token);
+    setLotId(id);
+    setIsCertified(true);
+    
+    // In a real app, this would make an API call to create the WTT on Stellar
+    console.log("WTT Token generated:", token);
+    console.log("Lot ID:", id);
+  };
+
+  const handleDownloadQR = () => {
+    // Create a canvas element to download the QR code
+    const svg = document.getElementById("qr-code-svg");
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        const pngFile = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.download = `QR-${wttToken}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+      }
+    };
+
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    img.src = url;
+  };
+
+  const handleStepClick = (stepId: number) => {
+    if (canProceedToStep(stepId)) {
+      setCurrentStep(stepId);
+      setValidationErrors({});
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleFileSelect = () => {
@@ -87,6 +242,15 @@ export default function DigitalizarPage() {
     });
 
     setUploadedFiles((prev) => [...prev, ...newFiles]);
+    
+    // Clear validation errors when files are uploaded
+    if (validationErrors.files) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.files;
+        return newErrors;
+      });
+    }
     
     // Reset input to allow selecting the same file again
     if (fileInputRef.current) {
@@ -122,6 +286,15 @@ export default function DigitalizarPage() {
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
+        {/* Back Button */}
+        <Link
+          href="/lotes"
+          className="inline-flex items-center gap-2 text-black hover:text-gray-800 mb-4 sm:mb-6 md:mb-8 transition-colors text-sm sm:text-base"
+        >
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
+          <span className="font-medium">Volver a Lotes</span>
+        </Link>
+
         {/* Header */}
         <motion.div
           className="text-center mb-6 sm:mb-8 md:mb-12"
@@ -148,17 +321,18 @@ export default function DigitalizarPage() {
               <motion.div
                 key={step.id}
                 className={cn(
-                  "rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border-2 transition-all duration-300 cursor-pointer",
+                  "rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border-2 transition-all duration-300",
                   isActive
                     ? "bg-black text-white border-black"
                     : isCompleted
                     ? "bg-gray-100 text-black border-black"
-                    : "bg-white text-black border-black"
+                    : "bg-white text-black border-black",
+                  canProceedToStep(step.id) ? "cursor-pointer" : "cursor-not-allowed opacity-60"
                 )}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                onClick={() => setCurrentStep(step.id)}
+                onClick={() => handleStepClick(step.id)}
               >
                 <div className="flex flex-col items-center text-center">
                   <div
@@ -213,12 +387,43 @@ export default function DigitalizarPage() {
                   value={formData.wineName}
                   onChange={handleInputChange}
                   placeholder="Ej: Malbec Reserva 2020"
-                  className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  className={cn(
+                    "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
+                    validationErrors.wineName ? "border-red-500" : "border-black"
+                  )}
                   required
                 />
+                {validationErrors.wineName && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.wineName}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="varietal"
+                    className="block text-sm font-medium text-black mb-2"
+                  >
+                    Varietal <span className="text-black">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="varietal"
+                    name="varietal"
+                    value={formData.varietal}
+                    onChange={handleInputChange}
+                    placeholder="Ej: Malbec, Cabernet Sauvignon"
+                    className={cn(
+                      "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
+                      validationErrors.varietal ? "border-red-500" : "border-black"
+                    )}
+                    required
+                  />
+                  {validationErrors.varietal && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.varietal}</p>
+                  )}
+                </div>
+
                 <div>
                   <label
                     htmlFor="region"
@@ -233,11 +438,19 @@ export default function DigitalizarPage() {
                     value={formData.region}
                     onChange={handleInputChange}
                     placeholder="Ej: Mendoza, Argentina"
-                    className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                    className={cn(
+                      "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
+                      validationErrors.region ? "border-red-500" : "border-black"
+                    )}
                     required
                   />
+                  {validationErrors.region && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.region}</p>
+                  )}
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label
                     htmlFor="vintage"
@@ -252,9 +465,41 @@ export default function DigitalizarPage() {
                     value={formData.vintage}
                     onChange={handleInputChange}
                     placeholder="Ej: 2020"
-                    className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                    className={cn(
+                      "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
+                      validationErrors.vintage ? "border-red-500" : "border-black"
+                    )}
                     required
                   />
+                  {validationErrors.vintage && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.vintage}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="bottleCount"
+                    className="block text-sm font-medium text-black mb-2"
+                  >
+                    Cantidad de Botellas <span className="text-black">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="bottleCount"
+                    name="bottleCount"
+                    value={formData.bottleCount}
+                    onChange={handleInputChange}
+                    placeholder="Ej: 5000"
+                    className={cn(
+                      "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
+                      validationErrors.bottleCount ? "border-red-500" : "border-black"
+                    )}
+                    required
+                    min="1"
+                  />
+                  {validationErrors.bottleCount && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.bottleCount}</p>
+                  )}
                 </div>
               </div>
 
@@ -274,46 +519,6 @@ export default function DigitalizarPage() {
                   rows={6}
                   className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label
-                    htmlFor="bottleCount"
-                    className="block text-sm font-medium text-black mb-2"
-                  >
-                    Cantidad de Botellas <span className="text-black">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="bottleCount"
-                    name="bottleCount"
-                    value={formData.bottleCount}
-                    onChange={handleInputChange}
-                    placeholder="Ej: 5000"
-                    className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="pricePerBottle"
-                    className="block text-sm font-medium text-black mb-2"
-                  >
-                    Precio por Botella (USD) <span className="text-black">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="pricePerBottle"
-                    name="pricePerBottle"
-                    value={formData.pricePerBottle}
-                    onChange={handleInputChange}
-                    placeholder="Ej: 85"
-                    className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                    required
-                  />
-                </div>
               </div>
             </div>
           )}
@@ -348,6 +553,9 @@ export default function DigitalizarPage() {
                 <p className="text-xs text-gray-600 mt-2">
                   Formatos aceptados: Imágenes (JPG, PNG), PDF, DOC, DOCX
                 </p>
+                {validationErrors.files && (
+                  <p className="mt-4 text-sm text-red-600 font-medium">{validationErrors.files}</p>
+                )}
               </div>
 
               {/* Uploaded files list */}
@@ -413,7 +621,7 @@ export default function DigitalizarPage() {
             </div>
           )}
 
-              {currentStep === 3 && (
+          {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">
                 Generar Wine Traceability Token (WTT)
@@ -438,7 +646,7 @@ export default function DigitalizarPage() {
             </div>
           )}
 
-              {currentStep === 4 && (
+          {currentStep === 4 && (
             <div className="space-y-6">
               <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">Confirmar Certificación</h2>
               <div className="space-y-4">
@@ -448,6 +656,10 @@ export default function DigitalizarPage() {
                     <div className="flex justify-between">
                       <span className="text-black">Lote/Vino:</span>
                       <span className="font-semibold text-black">{formData.wineName || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-black">Varietal:</span>
+                      <span className="font-semibold text-black">{formData.varietal || "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-black">Región:</span>
@@ -467,12 +679,109 @@ export default function DigitalizarPage() {
                     </div>
                   </div>
                 </div>
-                <button className="w-full bg-black text-white py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors">
+                <button 
+                  onClick={handleCertifyLot}
+                  className="w-full bg-black text-white py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
+                >
                   Generar WTT y Certificar Lote
                 </button>
               </div>
             </div>
           )}
+
+          {/* Success Screen with QR Code */}
+          <AnimatePresence>
+            {isCertified && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    // Don't close on background click, require explicit action
+                  }
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-black"
+                >
+                  <div className="text-center">
+                    {/* Success Icon */}
+                    <div className="flex items-center justify-center mb-6">
+                      <div className="bg-green-100 rounded-full p-4">
+                        <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-600" />
+                      </div>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-4">
+                      ¡Lote Certificado Exitosamente!
+                    </h2>
+                    <p className="text-base sm:text-lg text-gray-600 mb-8">
+                      Tu Wine Traceability Token (WTT) ha sido generado y registrado en Stellar
+                    </p>
+
+                    {/* WTT Token Display */}
+                    <div className="bg-black text-white rounded-xl p-4 sm:p-6 mb-8">
+                      <div className="text-xs sm:text-sm text-gray-300 mb-2">WTT Token</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-mono font-bold break-all">
+                        {wttToken}
+                      </div>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="bg-white rounded-xl p-6 sm:p-8 border-2 border-black mb-6 inline-block">
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <QrCode className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
+                        <h3 className="text-lg sm:text-xl font-semibold text-black">
+                          Código QR de Trazabilidad
+                        </h3>
+                      </div>
+                      <div className="bg-white p-4 rounded-lg inline-block">
+                        <div id="qr-code-container">
+                          <QRCodeSVG
+                            id="qr-code-svg"
+                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/trazabilidad/${lotId}`}
+                            size={256}
+                            level="H"
+                            includeMargin={true}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-4 max-w-xs mx-auto">
+                        Escanea este código para ver la trazabilidad completa del lote
+                      </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      <button
+                        onClick={handleDownloadQR}
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                      >
+                        <Download className="w-5 h-5" />
+                        Descargar QR
+                      </button>
+                      <Link
+                        href={`/lote/${lotId}`}
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
+                      >
+                        Ver Detalles del Lote
+                      </Link>
+                      <Link
+                        href="/lotes"
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 text-black px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                      >
+                        Volver a Lotes
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-8 border-t border-black">
@@ -490,8 +799,18 @@ export default function DigitalizarPage() {
             </button>
 
             <button
-              onClick={() => setCurrentStep((prev) => Math.min(4, prev + 1))}
-              className="px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+              onClick={handleNextStep}
+              disabled={
+                (currentStep === 1 && !isStep1Complete()) ||
+                (currentStep === 2 && !isStep2Complete())
+              }
+              className={cn(
+                "px-6 py-3 rounded-lg font-semibold transition-colors",
+                (currentStep === 1 && !isStep1Complete()) ||
+                (currentStep === 2 && !isStep2Complete())
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-black text-white hover:bg-gray-800"
+              )}
             >
               {currentStep === 4 ? "Finalizar" : "Siguiente"}
             </button>
@@ -501,3 +820,4 @@ export default function DigitalizarPage() {
     </main>
   );
 }
+

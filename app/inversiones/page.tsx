@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { DollarSign, Wine, TrendingUp, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import InvestmentCard from "@/components/InvestmentCard";
 import {
   getUserInvestments,
@@ -154,12 +154,12 @@ export default function InversionesPage() {
             <p className="text-gray-600 mb-6">
               Comienza a invertir en vinos premium y construye tu portafolio
             </p>
-            <a
+            <Link
               href="/mercado"
               className="inline-block bg-black text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
             >
               Explorar Vinos Disponibles
-            </a>
+            </Link>
           </div>
         )}
       </div>
