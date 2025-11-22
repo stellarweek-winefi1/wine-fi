@@ -515,3 +515,56 @@ export async function createArtistTrustline(
     throw error;
   }
 }
+
+// ============================================================================
+// Wine Token Configuration
+// ============================================================================
+
+/**
+ * Get wine token factory configuration from environment
+ */
+export function getWineFactoryConfig() {
+  const factoryId = Deno.env.get("WINE_FACTORY_ID");
+  const tokenWasmHash = Deno.env.get("TOKEN_WASM_HASH");
+
+  if (!factoryId) {
+    throw new Error("WINE_FACTORY_ID environment variable not set");
+  }
+
+  return {
+    factoryId,
+    tokenWasmHash: tokenWasmHash || undefined,
+  };
+}
+
+/**
+ * Validate wine lot metadata
+ */
+export function validateWineLotMetadata(metadata: any): boolean {
+  const requiredFields = [
+    "lot_id",
+    "winery_name",
+    "region",
+    "country",
+    "vintage",
+    "varietal",
+    "bottle_count",
+    "token_code",
+  ];
+
+  for (const field of requiredFields) {
+    if (!metadata[field]) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
+
+  if (typeof metadata.vintage !== "number" || metadata.vintage < 1900 || metadata.vintage > new Date().getFullYear() + 10) {
+    throw new Error("Invalid vintage year");
+  }
+
+  if (typeof metadata.bottle_count !== "number" || metadata.bottle_count <= 0) {
+    throw new Error("Invalid bottle_count");
+  }
+
+  return true;
+}

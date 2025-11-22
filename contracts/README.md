@@ -1,108 +1,232 @@
-# Soroban Project
+# WineFi - Simple Wine Token Contracts
 
-## Project Structure
+Soroban smart contracts for tokenizing wine lots on Stellar blockchain.
 
-This repository uses the recommended structure for a Soroban project:
-```text
-.
-├── contracts
-│   └── hello_world
-│       ├── src
-│       │   ├── lib.rs
-│       │   └── test.rs
-│       └── Cargo.toml
-├── Cargo.toml
-└── README.md
+## 🎯 What This Does
+
+Create simple, tradeable tokens that represent wine lots with embedded metadata (winery, vintage, region, etc.).
+
+## 📁 Structure
+
+```
+contracts/
+├── wine_token/          # Simple wine token with metadata
+├── wine_factory/        # Factory for deploying wine tokens
+├── common/              # Shared data models
+├── deploy_wine_token.sh # Deployment script
+└── create_wine_token_example.sh # Usage example
 ```
 
-- New Soroban contracts can be put in `contracts`, each in their own directory. There is already a `hello_world` contract in there to get you started, plus the `wine_lot_manager` contract used by Winefy.
-- `wine_lot_manager`: manages wine lot metadata and enforces supply caps for each tokenized batch (init, mint, and sale accounting helpers).
+## 🚀 Quick Start
 
-## 🚀 Quick Start con Stellar Devnet
-
-Para configurar una devnet de Stellar y probar estos contratos:
+### Prerequisites
 
 ```bash
-# Opción 1: Script de inicio rápido (recomendado)
-./quick_start.sh
+# Install Stellar CLI
+cargo install --locked stellar-cli
 
-# Opción 2: Script manual de despliegue
-./deploy_and_test.sh testnet test-account
-
-# Opción 3: Seguir la guía completa
-# Ver SETUP_DEVNET.md para instrucciones detalladas
+# Install Rust WASM target
+rustup target add wasm32-unknown-unknown
 ```
 
-**Requisitos previos:**
-- Rust y Cargo instalados
-- Stellar CLI instalado (`cargo install --locked stellar-cli`)
-- Cuenta de Stellar Testnet con lumens (obtén gratis en https://laboratory.stellar.org/#account-creator?network=testnet o usa `stellar keys fund`)
-
-## Common Commands
-
-From the workspace root:
+### Deploy to Testnet
 
 ```bash
-# Build all contracts
-cargo build --release -p wine-lot-manager
+cd contracts
 
-# Run unit tests (includes testutils)
-cargo test -p wine-lot-manager
+# Deploy factory and upload token WASM
+./deploy_wine_token.sh testnet winefi-admin
 
-# Example: mint a bottle
-stellar contract invoke \
-  <BOTTLE_FACTORY_ID> \
-  --function mint_bottle \
-  --source-account <ACCOUNT_NAME> \
-  --network testnet \
-  -- \
-  --lot_id "MALBEC-2024-001" \
-  --bottle_number 1 \
-  --winery <WINERY_ADDRESS> \
-  --wine_name "Gran Reserva Malbec" \
-  --vintage 2024 \
-  --metadata_uri "ipfs://Qm..."
-
-# Example: get bottle info
-stellar contract invoke \
-  <BOTTLE_FACTORY_ID> \
-  --function get_bottle \
-  --source-account <ACCOUNT_NAME> \
-  --network testnet \
-  -- \
-  --bottle_id "MALBEC-2024-001-0001"
-
-# Example: log a traceability event
-stellar contract invoke \
-  <TRACEABILITY_LOG_ID> \
-  --function log_event \
-  --source-account <ACCOUNT_NAME> \
-  --network testnet \
-  -- \
-  --bottle_id "MALBEC-2024-001-0001" \
-  --event_type Bottling \
-  --actor <ACTOR_ADDRESS> \
-  --description "Bottled at winery"
-
-# Example: get event history
-stellar contract invoke \
-  <TRACEABILITY_LOG_ID> \
-  --function get_history \
-  --source-account <ACCOUNT_NAME> \
-  --network testnet \
-  -- \
-  --bottle_id "MALBEC-2024-001-0001"
-
-# Example: transfer ownership
-stellar contract invoke \
-  <TRANSFER_ID> \
-  --function transfer \
-  --source-account <ACCOUNT_NAME> \
-  --network testnet \
-  -- \
-  --bottle_id "MALBEC-2024-001-0001" \
-  --to <NEW_OWNER_ADDRESS>
+# Load configuration
+source .deployed_wine_token_testnet.env
 ```
-- If you initialized this project with any other example contracts via `--with-example`, those contracts will be in the `contracts` directory as well.
-- Contracts should have their own `Cargo.toml` files that rely on the top-level `Cargo.toml` workspace for their dependencies.
-- Frontend libraries can be added to the top-level directory as well. If you initialized this project with a frontend template via `--frontend-template` you will have those files already included.
+
+### Create Your First Wine Token
+
+```bash
+# Use the example script
+./create_wine_token_example.sh
+
+# Or manually
+stellar contract invoke \
+  --id $WINE_FACTORY_ID \
+  --source-account winefi-admin \
+  --network testnet \
+  -- create_wine_token \
+  --admin $(stellar keys address winefi-admin) \
+  --decimal 0 \
+  --name "Malbec Reserve 2024" \
+  --symbol "MAL24" \
+  --wine_lot_metadata '{
+    "lot_id": "MAL-2024-001",
+    "winery_name": "Bodega Catena",
+    "region": "Mendoza",
+    "country": "Argentina",
+    "vintage": 2024,
+    "varietal": "Malbec",
+    "bottle_count": 1000,
+    "description": "Premium Reserve",
+    "token_code": "MAL24"
+  }'
+```
+
+## 📖 Wine Token Features
+
+- ✅ **Wine Metadata**: Embedded winery, region, vintage, varietal, bottle count
+- ✅ **Mint Tokens**: Winery can mint tokens (admin only)
+- ✅ **Transfer**: Standard token transfers between wallets
+- ✅ **Burn**: Remove tokens from circulation
+- ✅ **Query Metadata**: Anyone can read wine information
+
+## 🔧 Common Commands
+
+### Mint Tokens
+
+```bash
+# Mint 100 tokens to a buyer
+stellar contract invoke \
+  --id <TOKEN_ADDRESS> \
+  --source-account winefi-admin \
+  --network testnet \
+  -- mint \
+  --to <BUYER_ADDRESS> \
+  --amount 100
+```
+
+### Check Balance
+
+```bash
+stellar contract invoke \
+  --id <TOKEN_ADDRESS> \
+  --source-account winefi-admin \
+  --network testnet \
+  -- balance \
+  --id <ADDRESS>
+```
+
+### Query Wine Metadata
+
+```bash
+stellar contract invoke \
+  --id <TOKEN_ADDRESS> \
+  --source-account winefi-admin \
+  --network testnet \
+  -- get_wine_lot_metadata
+```
+
+### Transfer Tokens
+
+```bash
+stellar contract invoke \
+  --id <TOKEN_ADDRESS> \
+  --source-account buyer-account \
+  --network testnet \
+  -- transfer \
+  --from $(stellar keys address buyer-account) \
+  --to <RECIPIENT_ADDRESS> \
+  --amount 10
+```
+
+## 📊 Wine Metadata Structure
+
+```rust
+struct WineLotMetadata {
+    lot_id: String,          // Unique lot identifier
+    winery_name: String,     // Name of the winery
+    region: String,          // Wine region
+    country: String,         // Country
+    vintage: u32,            // Year
+    varietal: String,        // Grape variety
+    bottle_count: u32,       // Number of bottles in lot
+    description: Option<String>,  // Optional description
+    token_code: String,      // Short code
+}
+```
+
+## 🔨 Development
+
+```bash
+# Build contracts
+cargo build --target wasm32-unknown-unknown --release
+
+# Run tests
+cargo test
+
+# Build specific contract
+cargo build -p wine-token --target wasm32-unknown-unknown --release
+```
+
+## 🌐 Networks
+
+### Testnet (Default)
+- RPC: https://soroban-testnet.stellar.org
+- Passphrase: "Test SDF Network ; September 2015"
+- Get free XLM: https://laboratory.stellar.org/#account-creator?network=testnet
+
+### Futurenet
+```bash
+./deploy_wine_token.sh futurenet your-account
+```
+
+### Mainnet
+```bash
+./deploy_wine_token.sh mainnet your-account
+```
+
+## 📝 Deployed Contracts
+
+After deployment, contract IDs are saved in `.deployed_wine_token_testnet.env`:
+
+```env
+WINE_FACTORY_ID=C...
+TOKEN_WASM_HASH=...
+NETWORK=testnet
+ACCOUNT_NAME=winefi-admin
+ADMIN_ADDRESS=G...
+```
+
+## 🛠️ Troubleshooting
+
+### Account Not Funded
+```bash
+stellar keys fund your-account --network testnet
+```
+
+### WASM Hash Mismatch
+Re-upload the token WASM:
+```bash
+stellar contract upload \
+  --wasm target/wasm32-unknown-unknown/release/wine_token.wasm \
+  --source-account your-account \
+  --network testnet
+```
+
+Then update the factory:
+```bash
+stellar contract invoke \
+  --id $WINE_FACTORY_ID \
+  --source-account your-account \
+  --network testnet \
+  -- set_token_wasm_hash \
+  --new_token_wasm_hash <NEW_HASH>
+```
+
+## 📚 Resources
+
+- [Stellar Documentation](https://developers.stellar.org/)
+- [Soroban Smart Contracts](https://soroban.stellar.org/)
+- [Stellar Laboratory](https://laboratory.stellar.org/)
+- [Stellar Explorer](https://stellar.expert/)
+
+## 🤝 Integration
+
+These contracts integrate with:
+- **Supabase Edge Functions**: Custodial wallet management
+- **Next.js Frontend**: User interface for token operations
+- **Database**: Track token holdings and transactions
+
+See `supabase/functions/` for backend integration examples.
+
+## ⚖️ License
+
+MIT License - VineFi Team

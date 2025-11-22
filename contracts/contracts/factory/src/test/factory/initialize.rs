@@ -2,7 +2,7 @@ use soroban_sdk::{testutils::Address as _, Address, Env, BytesN};
 use crate::error::FactoryError;
 use crate::storage::DataKey;
 use crate::test::{create_vinifica_factory, vinifica_vault_contract, vinificaFactoryTest};
-use crate::constants::MAX_vinifica_FEE;
+use crate::constants::MAX_VINIFICA_FEE;
 
 fn retrieve_value(env: &Env, key: DataKey) -> Result<BytesN<32>, FactoryError> {
     env.storage().instance().get(&key).ok_or(FactoryError::NotInitialized)

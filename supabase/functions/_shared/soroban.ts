@@ -145,4 +145,187 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ============================================================================
+// Wine Token Specific Functions
+// ============================================================================
 
+export type WineLotMetadata = {
+  lot_id: string;
+  winery_name: string;
+  region: string;
+  country: string;
+  vintage: number;
+  varietal: string;
+  bottle_count: number;
+  description?: string;
+  token_code: string;
+};
+
+/**
+ * Create a new wine token via the factory contract
+ */
+export async function createWineToken(
+  factoryId: string,
+  adminSecret: string,
+  tokenAdmin: string,
+  decimal: number,
+  name: string,
+  symbol: string,
+  metadata: WineLotMetadata,
+): Promise<{ hash: string; tokenAddress: string }> {
+  const metadataScVal = nativeToScVal({
+    lot_id: metadata.lot_id,
+    winery_name: metadata.winery_name,
+    region: metadata.region,
+    country: metadata.country,
+    vintage: metadata.vintage,
+    varietal: metadata.varietal,
+    bottle_count: metadata.bottle_count,
+    description: metadata.description || null,
+    token_code: metadata.token_code,
+  }, { type: "object" });
+
+  const result = await invokeSorobanContract({
+    contractId: factoryId,
+    method: "create_wine_token",
+    args: [
+      addressVal(tokenAdmin),
+      u32Val(decimal),
+      stringVal(name),
+      stringVal(symbol),
+      metadataScVal,
+    ],
+    signerSecret: adminSecret,
+  });
+
+  return {
+    hash: result.hash,
+    tokenAddress: result.returnValue as string,
+  };
+}
+
+/**
+ * Mint wine tokens to a recipient
+ */
+export async function mintWineTokens(
+  tokenAddress: string,
+  adminSecret: string,
+  recipientAddress: string,
+  amount: number,
+): Promise<{ hash: string }> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "mint",
+    args: [
+      addressVal(recipientAddress),
+      nativeToScVal(amount, { type: "i128" }),
+    ],
+    signerSecret: adminSecret,
+  });
+
+  return { hash: result.hash };
+}
+
+/**
+ * Transfer wine tokens from one address to another
+ */
+export async function transferWineTokens(
+  tokenAddress: string,
+  fromSecret: string,
+  fromAddress: string,
+  toAddress: string,
+  amount: number,
+): Promise<{ hash: string }> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "transfer",
+    args: [
+      addressVal(fromAddress),
+      addressVal(toAddress),
+      nativeToScVal(amount, { type: "i128" }),
+    ],
+    signerSecret: fromSecret,
+  });
+
+  return { hash: result.hash };
+}
+
+/**
+ * Get wine lot metadata from a token
+ */
+export async function getWineTokenMetadata(
+  tokenAddress: string,
+  anySecret: string,
+): Promise<WineLotMetadata> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "get_wine_lot_metadata",
+    args: [],
+    signerSecret: anySecret,
+  });
+
+  const metadata = result.returnValue as any;
+  return {
+    lot_id: metadata.lot_id,
+    winery_name: metadata.winery_name,
+    region: metadata.region,
+    country: metadata.country,
+    vintage: metadata.vintage,
+    varietal: metadata.varietal,
+    bottle_count: metadata.bottle_count,
+    description: metadata.description || undefined,
+    token_code: metadata.token_code,
+  };
+}
+
+/**
+ * Get token balance for an address
+ */
+export async function getWineTokenBalance(
+  tokenAddress: string,
+  holderAddress: string,
+  anySecret: string,
+): Promise<number> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "balance",
+    args: [addressVal(holderAddress)],
+    signerSecret: anySecret,
+  });
+
+  return Number(result.returnValue);
+}
+
+/**
+ * Get token name
+ */
+export async function getTokenName(
+  tokenAddress: string,
+  anySecret: string,
+): Promise<string> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "name",
+    args: [],
+    signerSecret: anySecret,
+  });
+
+  return result.returnValue as string;
+}
+
+/**
+ * Get token symbol
+ */
+export async function getTokenSymbol(
+  tokenAddress: string,
+  anySecret: string,
+): Promise<string> {
+  const result = await invokeSorobanContract({
+    contractId: tokenAddress,
+    method: "symbol",
+    args: [],
+    signerSecret: anySecret,
+  });
+
+  return result.returnValue as string;
+}

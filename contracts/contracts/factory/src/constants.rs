@@ -1,1 +1,1 @@
-pub(crate) const MAX_vinifica_FEE: u32 = 9000;
+pub(crate) const MAX_VINIFICA_FEE: u32 = 9000;

@@ -1,4 +1,4 @@
-use crate::{error::FactoryError, constants::MAX_vinifica_FEE};
+use crate::{error::FactoryError, constants::MAX_VINIFICA_FEE};
 use soroban_sdk::{contracttype, Address, BytesN, Env, TryFromVal, Val};
 
 #[derive(Clone)]
@@ -109,7 +109,7 @@ pub fn get_vinifica_receiver(e: &Env) -> Result<Address, FactoryError> {
 
 // Fee Rate BPS (MAX BPS = 10000)
 pub fn put_vinifica_fee(e: &Env, value: &u32) -> Result<(), FactoryError> {
-    if *value <= MAX_vinifica_FEE {
+    if *value <= MAX_VINIFICA_FEE {
         e.storage().instance().set(&DataKey::FeeRate, value);
         Ok(()) 
     } else {
