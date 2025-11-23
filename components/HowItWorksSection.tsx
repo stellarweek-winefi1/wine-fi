@@ -4,36 +4,34 @@ import Image from "next/image";
 import { Shield, Clock, Zap, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef } from "react";
-
-const features = [
-  {
-    icon: Shield,
-    title: "100% Confiable",
-    description:
-      "Cada registro está certificado y no se puede modificar. Tus clientes pueden confiar completamente en la información que ven sobre tus vinos.",
-  },
-  {
-    icon: Clock,
-    title: "Disponible 24/7",
-    description:
-      "Accede a tu información desde cualquier lugar y en cualquier momento. No hay horarios ni limitaciones. Tu trazabilidad siempre está disponible.",
-  },
-  {
-    icon: Zap,
-    title: "Rápido y Simple",
-    description:
-      "Registra eventos en segundos con un simple escaneo de QR. No necesitas capacitación especial. Tu equipo puede empezar a usarlo inmediatamente.",
-  },
-  {
-    icon: QrCode,
-    title: "QR Inteligente",
-    description:
-      "Imprime un QR único para cada lote y pégalo en tus cajas. En cada etapa del proceso, simplemente escanea y registra el evento. Tus clientes también pueden escanear para verificar autenticidad.",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
+
+  const features = [
+    {
+      icon: Shield,
+      title: t.howItWorks.features.reliable.title,
+      description: t.howItWorks.features.reliable.description,
+    },
+    {
+      icon: Clock,
+      title: t.howItWorks.features.available.title,
+      description: t.howItWorks.features.available.description,
+    },
+    {
+      icon: Zap,
+      title: t.howItWorks.features.fast.title,
+      description: t.howItWorks.features.fast.description,
+    },
+    {
+      icon: QrCode,
+      title: t.howItWorks.features.smartQR.title,
+      description: t.howItWorks.features.smartQR.description,
+    },
+  ];
 
   return (
     <section
@@ -49,11 +47,11 @@ export default function HowItWorksSection() {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h2 
-            id="features-heading" 
+          <h2
+            id="features-heading"
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-black px-4"
           >
-            Características que Simplifican tu Trabajo
+            {t.howItWorks.title}
           </h2>
           <motion.p
             className="text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl mx-auto px-4"
@@ -62,7 +60,7 @@ export default function HowItWorksSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Todo lo que necesitas para certificar y rastrear tus vinos, sin complicaciones
+            {t.howItWorks.subtitle}
           </motion.p>
         </motion.div>
 

@@ -6,22 +6,27 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, QrCode, Camera, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Dynamically import QRScannerWrapper to avoid SSR issues
 const QRScannerWrapper = dynamic(
   () => import("@/components/QRScannerWrapper"),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-white">Cargando cámara...</div>
-      </div>
-    ),
+    loading: () => {
+      // This will be replaced with translated text in the component
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="text-white">Loading camera...</div>
+        </div>
+      );
+    },
   }
 );
 
 export default function QRPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [manualCode, setManualCode] = useState("");
@@ -36,7 +41,17 @@ export default function QRPage() {
 
   const handleError = (error: unknown) => {
     console.error("QR Scanner Error:", error);
-    setCameraError("Error al acceder a la cámara. Por favor, verifica los permisos.");
+    if (error instanceof Error) {
+      if (error.name === "NotAllowedError" || error.message.includes("Permission")) {
+        setCameraError(t.qrScanner.errors.permissionDenied);
+      } else if (error.name === "NotFoundError") {
+        setCameraError(t.qrScanner.errors.noCamera);
+      } else {
+        setCameraError(t.qrScanner.errors.cameraError);
+      }
+    } else {
+      setCameraError(t.qrScanner.errors.cameraError);
+    }
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
@@ -78,7 +93,7 @@ export default function QRPage() {
   const handleStartScan = async () => {
     try {
       // Request camera permission
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' } // Use back camera on mobile
       });
       // If we get here, permission was granted
@@ -87,7 +102,17 @@ export default function QRPage() {
       setCameraError(null);
     } catch (error) {
       console.error("Camera access error:", error);
-      setCameraError("No se pudo acceder a la cámara. Por favor, verifica los permisos en la configuración de tu navegador.");
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError") {
+          setCameraError(t.qrScanner.errors.permissionDenied);
+        } else if (error.name === "NotFoundError") {
+          setCameraError(t.qrScanner.errors.noCamera);
+        } else {
+          setCameraError(t.qrScanner.errors.accessError);
+        }
+      } else {
+        setCameraError(t.qrScanner.errors.accessError);
+      }
     }
   };
 
@@ -106,7 +131,7 @@ export default function QRPage() {
           className="inline-flex items-center gap-2 text-black hover:text-gray-800 mb-4 sm:mb-6 md:mb-8 transition-colors text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-          <span className="font-medium">Volver</span>
+          <span className="font-medium">{t.qrScanner.backButton}</span>
         </Link>
 
         <motion.div
@@ -119,11 +144,11 @@ export default function QRPage() {
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
               <QrCode className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">
-                Escanear Código QR
+                {t.qrScanner.title}
               </h1>
             </div>
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-              Escanea el código QR del lote de vino para verificar su autenticidad y ver la trazabilidad completa
+              {t.qrScanner.subtitle}
             </p>
           </div>
 
@@ -148,7 +173,7 @@ export default function QRPage() {
                       </div>
                     </div>
                     <p className="absolute bottom-4 left-0 right-0 text-white text-center text-sm px-4 z-20 font-semibold">
-                      Posiciona el código QR dentro del marco
+                      {t.qrScanner.positionQR}
                     </p>
                   </div>
                   <div className="p-4 sm:p-6 text-center border-t-2 border-black bg-gray-50">
@@ -167,7 +192,7 @@ export default function QRPage() {
                       }}
                       className="px-4 py-2 bg-white text-black border-2 border-black rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
                     >
-                      Cancelar Escaneo
+                      {t.qrScanner.cancelScan}
                     </button>
                   </div>
                 </motion.div>
@@ -182,10 +207,10 @@ export default function QRPage() {
                       <QrCode className="w-16 h-16 sm:w-20 sm:h-20 text-white" />
                     </div>
                     <h2 className="text-xl sm:text-2xl font-bold text-black mb-2">
-                      Escanear Código QR
+                      {t.qrScanner.scanTitle}
                     </h2>
                     <p className="text-sm sm:text-base text-gray-600">
-                      Usa la cámara de tu dispositivo o ingresa el código manualmente
+                      {t.qrScanner.scanSubtitle}
                     </p>
                   </div>
 
@@ -195,7 +220,7 @@ export default function QRPage() {
                       className="w-full bg-black text-white px-6 py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg flex items-center justify-center gap-2"
                     >
                       <Camera className="w-5 h-5" />
-                      Activar Cámara
+                      {t.qrScanner.activateCamera}
                     </button>
 
                     <div className="relative">
@@ -203,7 +228,7 @@ export default function QRPage() {
                         <div className="w-full border-t border-gray-300"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">O</span>
+                        <span className="px-2 bg-white text-gray-500">{t.qrScanner.or}</span>
                       </div>
                     </div>
 
@@ -213,14 +238,14 @@ export default function QRPage() {
                           htmlFor="manual-code"
                           className="block text-sm font-medium text-black mb-2"
                         >
-                          Ingresar Código Manualmente
+                          {t.qrScanner.manualEntry}
                         </label>
                         <input
                           id="manual-code"
                           type="text"
                           value={manualCode}
                           onChange={(e) => setManualCode(e.target.value)}
-                          placeholder="Ej: CATENA-ZAPATA-WTT"
+                          placeholder={t.qrScanner.placeholder}
                           className="w-full px-4 py-3 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent font-mono text-sm sm:text-base"
                         />
                       </div>
@@ -229,7 +254,7 @@ export default function QRPage() {
                         disabled={!manualCode.trim()}
                         className="w-full bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                       >
-                        Verificar Código
+                        {t.qrScanner.verifyCode}
                       </button>
                     </form>
                   </div>
@@ -250,11 +275,11 @@ export default function QRPage() {
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-bold text-black text-center mb-4">
-                Código Verificado
+                {t.qrScanner.codeVerified}
               </h2>
 
               <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6 border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Código del lote:</p>
+                <p className="text-sm text-gray-600 mb-2">{t.qrScanner.lotCode}</p>
                 <p className="text-base sm:text-lg font-mono text-black break-all font-semibold">
                   {scannedData}
                 </p>
@@ -265,13 +290,13 @@ export default function QRPage() {
                   onClick={handleViewLot}
                   className="flex-1 bg-black text-white px-6 py-3 sm:py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg text-sm sm:text-base"
                 >
-                  Ver Trazabilidad del Lote
+                  {t.qrScanner.viewTraceability}
                 </button>
                 <button
                   onClick={handleScanAgain}
                   className="flex-1 bg-white text-black px-6 py-3 sm:py-4 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
-                  Escanear Otro
+                  {t.qrScanner.scanAnother}
                 </button>
               </div>
             </motion.div>
@@ -281,14 +306,14 @@ export default function QRPage() {
           <div className="mt-8 text-center">
             <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
               <p className="text-sm sm:text-base text-gray-600 mb-2">
-                <strong>¿Qué puedes verificar?</strong>
+                <strong>{t.qrScanner.whatCanVerify}</strong>
               </p>
               <ul className="text-xs sm:text-sm text-gray-600 space-y-1 text-left max-w-md mx-auto">
-                <li>• Autenticidad del lote</li>
-                <li>• Timeline completo de trazabilidad</li>
-                <li>• Eventos registrados en blockchain</li>
-                <li>• Documentación certificada</li>
-                <li>• Información verificable públicamente</li>
+                <li>• {t.qrScanner.verifyItems.authenticity}</li>
+                <li>• {t.qrScanner.verifyItems.timeline}</li>
+                <li>• {t.qrScanner.verifyItems.blockchain}</li>
+                <li>• {t.qrScanner.verifyItems.documentation}</li>
+                <li>• {t.qrScanner.verifyItems.publicInfo}</li>
               </ul>
             </div>
           </div>

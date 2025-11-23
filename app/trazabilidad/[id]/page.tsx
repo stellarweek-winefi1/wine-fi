@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Wine, Calendar, MapPin, QrCode, Shield, Eye } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockLote = {
   id: "demo",
@@ -48,6 +49,7 @@ const mockEvents = [
 ];
 
 export default function TrazabilidadPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
@@ -59,7 +61,7 @@ export default function TrazabilidadPage() {
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Shield className="w-4 h-4" />
-            <span>Verificado en Stellar</span>
+            <span>{t.trazabilidad.verified} en Stellar</span>
           </div>
         </div>
       </div>
@@ -158,7 +160,7 @@ export default function TrazabilidadPage() {
                             {event.verificado && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                                 <Shield className="w-3 h-3 mr-1" />
-                                Verificado
+                                {t.trazabilidad.verified}
                               </span>
                             )}
                           </div>

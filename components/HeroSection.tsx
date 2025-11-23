@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HeroSection() {
   const constraintsRef = useRef(null);
@@ -12,6 +13,7 @@ export default function HeroSection() {
   const y = useMotionValue(0);
   const rotateX = useTransform(y, [-100, 100], [30, -30]);
   const rotateY = useTransform(x, [-100, 100], [-30, 30]);
+  const { t } = useLanguage();
 
   return (
     <section
@@ -38,7 +40,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         >
-          Vinifica: Protegé tu marca y elevá el valor de cada vino.
+          {t.hero.title}
         </motion.h1>
 
         <motion.p
@@ -47,7 +49,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         >
-          La forma más simple y confiable de asegurar trazabilidad y autenticidad.
+          {t.hero.subtitle}
         </motion.p>
 
         <motion.div
@@ -57,10 +59,10 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
         >
           <p>
-            Vinifica certifica tus lotes, registra cada etapa del proceso y permite que tus clientes verifiquen la autenticidad con solo escanear un QR.
+            {t.hero.description1}
           </p>
           <p>
-            Una solución que no solo aporta transparencia, sino que eleva la percepción y el valor de tus vinos al garantizar confianza en cada botella.
+            {t.hero.description2}
           </p>
         </motion.div>
 
@@ -74,10 +76,10 @@ export default function HeroSection() {
             <Link
               href="/lotes"
               className="inline-flex items-center justify-center gap-2 bg-black text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl w-full sm:w-auto transition-all duration-300 group relative overflow-hidden"
-              aria-label="Ver lotes certificados"
+              aria-label={t.hero.viewLots}
             >
               <span className="relative z-10 flex items-center gap-2">
-                Ver Lotes
+                {t.hero.viewLots}
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </span>
               <motion.span
@@ -93,9 +95,9 @@ export default function HeroSection() {
             <Link
               href="/lotes/nuevo"
               className="inline-flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg border-2 border-black hover:border-gray-600 w-full sm:w-auto transition-all duration-300 group relative overflow-hidden"
-              aria-label="Registrar nuevo lote"
+              aria-label={t.hero.registerNewLot}
             >
-              <span className="relative z-10">Registrar Nuevo Lote</span>
+              <span className="relative z-10">{t.hero.registerNewLot}</span>
               <motion.span
                 className="absolute inset-0 bg-gray-50"
                 initial={{ x: "-100%" }}
@@ -109,9 +111,9 @@ export default function HeroSection() {
             <Link
               href="/buy"
               className="inline-flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg border-2 border-black hover:border-gray-600 w-full sm:w-auto transition-all duration-300 group relative overflow-hidden"
-              aria-label="Comprar lotes"
+              aria-label={t.hero.buyLots}
             >
-              <span className="relative z-10">Comprar Lotes</span>
+              <span className="relative z-10">{t.hero.buyLots}</span>
               <motion.span
                 className="absolute inset-0 bg-gray-50"
                 initial={{ x: "-100%" }}
@@ -130,10 +132,10 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
           {[
-            { value: "100%", label: "Confiable" },
-            { value: "24/7", label: "Disponible" },
-            { value: "Todo el proceso", label: "en minutos" },
-            { value: "QR", label: "Inteligente" },
+            { value: "100%", label: t.hero.stats.reliable },
+            { value: "24/7", label: t.hero.stats.available },
+            { value: t.hero.stats.process, label: t.hero.stats.inMinutes },
+            { value: "QR", label: t.hero.stats.smart },
           ].map((stat, index) => (
             <motion.div
               key={index}

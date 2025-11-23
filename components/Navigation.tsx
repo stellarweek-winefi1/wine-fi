@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Wine, Home, Package, QrCode, Menu, X, ShoppingCart } from "lucide-react";
+import { Wine, Home, Package, QrCode, Menu, X, ShoppingCart, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Navigation() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { language, setLanguage, t } = useLanguage();
 
   // Close mobile menu when clicking outside or on escape key
   useEffect(() => {
@@ -48,12 +50,16 @@ export default function Navigation() {
   }, [pathname]);
 
   const navItems = [
-    { href: "/", label: "Inicio", icon: Home },
-    { href: "/lotes", label: "Lotes", icon: Package },
-    { href: "/buy", label: "Comprar", icon: ShoppingCart },
+    { href: "/", label: t.nav.home, icon: Home },
+    { href: "/lotes", label: t.nav.lotes, icon: Package },
+    { href: "/buy", label: t.nav.buy, icon: ShoppingCart },
   ];
 
-  const ctaItem = { href: "/qr", label: "Escanear QR", icon: QrCode };
+  const ctaItem = { href: "/qr", label: t.nav.scanQR, icon: QrCode };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'es' ? 'en' : 'es');
+  };
 
   return (
     <nav 
@@ -76,6 +82,16 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-6">
+            {/* Language Switcher */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-black hover:bg-gray-100 transition-colors"
+              aria-label={`Switch to ${language === 'es' ? 'English' : 'Spanish'}`}
+            >
+              <Languages className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
+              <span className="font-semibold">{language === 'es' ? 'EN' : 'ES'}</span>
+            </button>
+
             {/* Navigation Links */}
             <ul className="flex items-center gap-6">
               {navItems.map((item) => {
@@ -121,19 +137,31 @@ export default function Navigation() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-md transition-colors touch-manipulation"
-            aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={isMobileMenuOpen}
-            type="button"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
-            ) : (
-              <Menu className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Mobile Language Switcher */}
+            <button
+              onClick={toggleLanguage}
+              className="lg:hidden p-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-md transition-colors touch-manipulation"
+              aria-label={`Switch to ${language === 'es' ? 'English' : 'Spanish'}`}
+            >
+              <Languages className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
+            </button>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-md transition-colors touch-manipulation"
+              aria-label={isMobileMenuOpen ? t.nav.closeMenu : t.nav.openMenu}
+              aria-expanded={isMobileMenuOpen}
+              type="button"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
+              ) : (
+                <Menu className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}

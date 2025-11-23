@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function CTASection() {
+  const { t } = useLanguage();
   return (
     <section
       className="py-20 px-4 sm:px-6 lg:px-8 bg-black relative overflow-hidden"
@@ -43,9 +45,9 @@ export default function CTASection() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Comienza a Proteger tu Marca Hoy
+            {t.cta.title}
           </motion.h2>
-          
+
           <motion.p
             className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 md:mb-10 max-w-3xl mx-auto px-4 leading-relaxed"
             initial={{ opacity: 0 }}
@@ -53,9 +55,7 @@ export default function CTASection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            Únete a bodegas que ya están usando Vinifica para certificar sus lotes, 
-            proteger su marca y ofrecer transparencia verificable a sus clientes. 
-            Comienza en minutos, sin complicaciones.
+            {t.cta.description}
           </motion.p>
 
           <motion.div
@@ -72,10 +72,10 @@ export default function CTASection() {
               <Link
                 href="/lotes/nuevo"
                 className="inline-flex items-center justify-center gap-2 bg-white text-black px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl w-full sm:w-auto sm:min-w-[200px] md:min-w-[250px] transition-all duration-300 group relative overflow-hidden"
-                aria-label="Registrar nuevo lote"
+                aria-label={t.cta.registerFirstLot}
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Registrar Primer Lote
+                  {t.cta.registerFirstLot}
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </span>
                 <motion.span
@@ -94,10 +94,10 @@ export default function CTASection() {
               <Link
                 href="/lotes"
                 className="inline-flex items-center justify-center bg-transparent text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg border-2 border-white hover:border-gray-300 w-full sm:w-auto sm:min-w-[200px] md:min-w-[250px] transition-all duration-300 group relative overflow-hidden"
-                aria-label="Ver lotes existentes"
+                aria-label={t.cta.viewExistingLots}
               >
                 <span className="relative z-10 text-white hover:text-white group-hover:text-white transition-colors duration-300">
-                  Ver Lotes Existentes
+                  {t.cta.viewExistingLots}
                 </span>
                 <motion.span
                   className="absolute inset-0 bg-gray-800"

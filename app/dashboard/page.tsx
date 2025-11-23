@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Wine, Plus, Eye, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockLotes = [
   {
@@ -41,6 +42,7 @@ const mockLotes = [
 ];
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -52,10 +54,10 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-black mb-2">
-                Dashboard
+                {t.dashboard.title}
               </h1>
               <p className="text-base sm:text-lg text-gray-600">
-                Visualiza y gestiona todos tus lotes certificados con trazabilidad blockchain
+                {t.dashboard.subtitle}
               </p>
             </div>
             <Link
@@ -63,7 +65,7 @@ export default function DashboardPage() {
               className="inline-flex items-center gap-2 bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg text-sm sm:text-base"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              Nuevo Lote
+              {t.dashboard.newLot}
             </Link>
           </div>
 
@@ -96,15 +98,15 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        Año: {lote.año}
+                        {t.dashboard.year}: {lote.año}
                       </div>
                       <div className="text-sm text-gray-600">
-                        Cantidad: <span className="font-semibold text-black">{lote.cantidad} botellas</span>
+                        {t.dashboard.quantity}: <span className="font-semibold text-black">{lote.cantidad} {t.dashboard.bottles}</span>
                       </div>
                     </div>
 
                     <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1">Último evento</p>
+                      <p className="text-xs text-gray-500 mb-1">{t.dashboard.lastEvent}</p>
                       <p className="text-sm font-semibold text-black">{lote.ultimoEvento}</p>
                       <p className="text-xs text-gray-500 mt-1">{lote.fecha}</p>
                     </div>
@@ -116,7 +118,7 @@ export default function DashboardPage() {
                       className="flex items-center justify-center gap-2 bg-black text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors w-full text-sm sm:text-base"
                     >
                       <Eye className="w-4 h-4" />
-                      Ver Trazabilidad
+                      {t.dashboard.viewTraceability}
                     </Link>
                   </div>
                 </div>
@@ -128,17 +130,17 @@ export default function DashboardPage() {
             <div className="text-center py-12">
               <Wine className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                No tienes lotes registrados
+                {t.dashboard.noLotes}
               </h3>
               <p className="text-gray-500 mb-6">
-                Comienza creando tu primer lote de vino
+                {t.dashboard.noLotesMessage}
               </p>
               <Link
                 href="/lotes/nuevo"
                 className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
                 <Plus className="w-5 h-5" />
-                Crear Primer Lote
+                {t.dashboard.createFirstLot}
               </Link>
             </div>
           )}

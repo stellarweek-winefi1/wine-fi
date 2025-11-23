@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Wine, Plus, Eye, Calendar, MapPin, Search, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockLotes = [
   {
@@ -234,6 +235,7 @@ const mockLotes = [
 ];
 
 export default function LotesPage() {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredLotes = mockLotes.filter((lote) =>
@@ -248,10 +250,10 @@ export default function LotesPage() {
         {/* Page Header */}
         <div className="text-center mb-6 sm:mb-8 md:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-black px-4">
-            Lotes Certificados
+            {t.lotes.title}
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-black max-w-3xl mx-auto px-4">
-            Visualiza todos los lotes certificados con Certificados de Autenticidad
+            {t.lotes.subtitle}
           </p>
         </div>
 
@@ -260,7 +262,7 @@ export default function LotesPage() {
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
             <label htmlFor="search-lotes" className="sr-only">
-              Buscar lotes
+              {t.lotes.searchLabel}
             </label>
             <Search
               className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-black"
@@ -269,11 +271,11 @@ export default function LotesPage() {
             <input
               id="search-lotes"
               type="search"
-              placeholder="Buscar por nombre, región o varietal..."
+              placeholder={t.lotes.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 rounded-xl border border-black focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-base sm:text-lg"
-              aria-label="Buscar lotes"
+              aria-label={t.lotes.searchLabel}
             />
           </div>
 
@@ -282,7 +284,7 @@ export default function LotesPage() {
             className="inline-flex items-center justify-center gap-2 bg-black text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors shadow-lg text-sm sm:text-base whitespace-nowrap"
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            Nuevo Lote
+            {t.lotes.newLot}
           </Link>
         </div>
 
@@ -314,7 +316,7 @@ export default function LotesPage() {
 
                   {/* Certificate Badge */}
                   <div className="bg-black text-white rounded-lg p-2 sm:p-3 mb-4">
-                    <div className="text-xs text-gray-300 mb-1">Certificado</div>
+                    <div className="text-xs text-gray-300 mb-1">{t.lotes.certified}</div>
                     <div className="text-xs sm:text-sm font-mono font-semibold truncate">
                       {lote.wtt}
                     </div>
@@ -323,7 +325,7 @@ export default function LotesPage() {
                   {/* Price */}
                   {lote.priceUSDC && (
                     <div className="mb-4">
-                      <div className="text-sm text-gray-600 mb-1">Precio</div>
+                      <div className="text-sm text-gray-600 mb-1">{t.lotes.price}</div>
                       <div className="text-2xl sm:text-3xl font-bold text-black">
                         {lote.priceUSDC.toLocaleString()} USDC
                       </div>
@@ -338,10 +340,10 @@ export default function LotesPage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4 flex-shrink-0" />
-                      <span>Año: {lote.año} • Varietal: {lote.varietal}</span>
+                      <span>{t.lotes.year}: {lote.año} • {t.lotes.varietal}: {lote.varietal}</span>
                     </div>
                     <div className="text-sm text-gray-600">
-                      Cantidad: <span className="font-semibold text-black">{lote.cantidad.toLocaleString()} botellas</span>
+                      {t.lotes.quantity}: <span className="font-semibold text-black">{lote.cantidad.toLocaleString()} {t.lotes.bottles}</span>
                     </div>
                   </div>
 
@@ -349,11 +351,11 @@ export default function LotesPage() {
                   <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-200">
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="w-3 h-3 text-gray-500" />
-                      <p className="text-xs text-gray-500">Último evento</p>
+                      <p className="text-xs text-gray-500">{t.lotes.lastEvent}</p>
                     </div>
                     <p className="text-sm font-semibold text-black">{lote.ultimoEvento}</p>
                     <p className="text-xs text-gray-500 mt-1">{lote.fecha}</p>
-                    <p className="text-xs text-gray-500 mt-1">{lote.eventos} eventos registrados</p>
+                    <p className="text-xs text-gray-500 mt-1">{lote.eventos} {t.lotes.eventsRegistered}</p>
                   </div>
                 </div>
 
@@ -364,7 +366,7 @@ export default function LotesPage() {
                     className="flex items-center justify-center gap-2 bg-black text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors w-full text-sm sm:text-base"
                   >
                     <Eye className="w-4 h-4" />
-                    Ver Trazabilidad
+                    {t.lotes.viewTraceability}
                   </Link>
                 </div>
               </motion.div>
@@ -374,10 +376,10 @@ export default function LotesPage() {
           <div className="text-center py-12">
             <Wine className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No se encontraron lotes
+              {t.lotes.noLotesFound}
             </h3>
             <p className="text-gray-500 mb-6">
-              {searchQuery ? "Intenta con otros términos de búsqueda" : "Comienza creando tu primer lote certificado"}
+              {searchQuery ? t.lotes.tryOtherSearch : t.lotes.noLotesMessage}
             </p>
             {!searchQuery && (
               <Link
@@ -385,7 +387,7 @@ export default function LotesPage() {
                 className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
                 <Plus className="w-5 h-5" />
-                Crear Primer Lote
+                {t.lotes.createFirstLot}
               </Link>
             )}
           </div>
@@ -395,7 +397,7 @@ export default function LotesPage() {
         {filteredLotes.length > 0 && (
           <div className="mt-6 sm:mt-8 text-center">
             <p className="text-sm text-gray-600">
-              Mostrando {filteredLotes.length} {filteredLotes.length === 1 ? "lote" : "lotes"} certificado{filteredLotes.length === 1 ? "" : "s"}
+              {t.lotes.showing} {filteredLotes.length} {filteredLotes.length === 1 ? t.lotes.lot : t.lotes.lots} {filteredLotes.length === 1 ? t.lotes.certifiedSingle : t.lotes.certifiedPlural}
             </p>
           </div>
         )}

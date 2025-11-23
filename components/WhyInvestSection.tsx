@@ -4,42 +4,44 @@ import Image from "next/image";
 import { Wine, Shield, Globe, TrendingUp, FileCheck, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef } from "react";
-
-const benefits = [
-  {
-    icon: Shield,
-    title: "Protección de Marca",
-    description: "Protege tu marca contra falsificaciones. Cada lote certificado tiene una identidad única verificable que no se puede copiar.",
-  },
-  {
-    icon: FileCheck,
-    title: "Certificación Automática",
-    description: "Obtén certificaciones digitales automáticas para tus lotes. Ideal para exportaciones y cumplimiento regulatorio.",
-  },
-  {
-    icon: Users,
-    title: "Confianza del Cliente",
-    description: "Tus clientes pueden verificar la autenticidad y origen de cada botella. Transparencia que construye lealtad y valor de marca.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Soporte para Exportación",
-    description: "Documentación completa y verificable para cumplir con requisitos internacionales. Facilita la exportación a nuevos mercados.",
-  },
-  {
-    icon: Globe,
-    title: "Detección de Problemas",
-    description: "Identifica rápidamente problemas en la cadena de distribución. Registra cada movimiento desde el viñedo hasta el cliente final.",
-  },
-  {
-    icon: Wine,
-    title: "Fácil de Usar",
-    description: "No necesitas conocimientos técnicos. Simplemente escanea QR y registra eventos. Funciona desde cualquier teléfono o tablet.",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function WhyInvestSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
+
+  const benefits = [
+    {
+      icon: Shield,
+      title: t.whyInvest.benefits.brandProtection.title,
+      description: t.whyInvest.benefits.brandProtection.description,
+    },
+    {
+      icon: FileCheck,
+      title: t.whyInvest.benefits.autoCertification.title,
+      description: t.whyInvest.benefits.autoCertification.description,
+    },
+    {
+      icon: Users,
+      title: t.whyInvest.benefits.customerTrust.title,
+      description: t.whyInvest.benefits.customerTrust.description,
+    },
+    {
+      icon: TrendingUp,
+      title: t.whyInvest.benefits.exportSupport.title,
+      description: t.whyInvest.benefits.exportSupport.description,
+    },
+    {
+      icon: Globe,
+      title: t.whyInvest.benefits.problemDetection.title,
+      description: t.whyInvest.benefits.problemDetection.description,
+    },
+    {
+      icon: Wine,
+      title: t.whyInvest.benefits.easyToUse.title,
+      description: t.whyInvest.benefits.easyToUse.description,
+    },
+  ];
 
   return (
     <section
@@ -72,7 +74,7 @@ export default function WhyInvestSection() {
               id="value-heading"
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black text-center"
             >
-              ¿Por qué Vinifica para tu Bodega?
+              {t.whyInvest.title}
             </h2>
           </motion.div>
           <motion.p
@@ -82,8 +84,7 @@ export default function WhyInvestSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            Diseñado específicamente para bodegas y productores que buscan proteger su marca, 
-            demostrar autenticidad y simplificar la trazabilidad sin complicaciones técnicas.
+            {t.whyInvest.subtitle}
           </motion.p>
         </motion.div>
 

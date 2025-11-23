@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Vinifica - Trazabilidad Verificable de Vinos",
-  description: "Plataforma de trazabilidad para vinos premium. Certifica lotes, registra eventos y verifica autenticidad con Certificados de Autenticidad usando la mejor tecnología.",
+  title: "Vinifica - Verifiable Wine Traceability",
+  description: "Traceability platform for premium wines. Certify batches, record events and verify authenticity with Certificates of Authenticity using the best technology.",
 };
 
 export default function RootLayout({
@@ -16,10 +17,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="en">
       <body className={inter.className}>
-        <Navigation />
-        {children}
+        <LanguageProvider>
+          <Navigation />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

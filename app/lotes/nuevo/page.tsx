@@ -7,33 +7,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-
-const steps = [
-  {
-    id: 1,
-    title: "Información del Lote",
-    description: "Detalles del lote",
-    icon: Wine,
-  },
-  {
-    id: 2,
-    title: "Documentación",
-    description: "Certificados y fotos",
-    icon: Upload,
-  },
-  {
-    id: 3,
-    title: "Certificado de Vino",
-    description: "Crear certificado único",
-    icon: DollarSign,
-  },
-  {
-    id: 4,
-    title: "Confirmar",
-    description: "Revisa y certifica",
-    icon: CheckCircle,
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface UploadedFile {
   id: string;
@@ -42,6 +16,7 @@ interface UploadedFile {
 }
 
 export default function NuevoLotePage() {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     wineName: "",
@@ -58,6 +33,33 @@ export default function NuevoLotePage() {
   const [wttToken, setWttToken] = useState<string>("");
   const [lotId, setLotId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const steps = [
+    {
+      id: 1,
+      title: t.newLot.steps.step1.title,
+      description: t.newLot.steps.step1.description,
+      icon: Wine,
+    },
+    {
+      id: 2,
+      title: t.newLot.steps.step2.title,
+      description: t.newLot.steps.step2.description,
+      icon: Upload,
+    },
+    {
+      id: 3,
+      title: t.newLot.steps.step3.title,
+      description: t.newLot.steps.step3.description,
+      icon: DollarSign,
+    },
+    {
+      id: 4,
+      title: t.newLot.steps.step4.title,
+      description: t.newLot.steps.step4.description,
+      icon: CheckCircle,
+    },
+  ];
 
   // Validation functions
   const isStep1Complete = () => {
@@ -95,30 +97,30 @@ export default function NuevoLotePage() {
     
     if (currentStep === 1) {
       if (!formData.wineName.trim()) {
-        errors.wineName = "El nombre del lote es requerido";
+        errors.wineName = t.newLot.form.wineName.required;
       }
       if (!formData.varietal.trim()) {
-        errors.varietal = "El varietal es requerido";
+        errors.varietal = t.newLot.form.varietal.required;
       }
       if (!formData.region.trim()) {
-        errors.region = "La región es requerida";
+        errors.region = t.newLot.form.region.required;
       }
       if (!formData.vintage.trim()) {
-        errors.vintage = "La añada es requerida";
+        errors.vintage = t.newLot.form.vintage.required;
       }
       if (!formData.bottleCount.trim()) {
-        errors.bottleCount = "La cantidad de botellas es requerida";
+        errors.bottleCount = t.newLot.form.bottleCount.required;
       } else if (parseInt(formData.bottleCount) <= 0) {
-        errors.bottleCount = "La cantidad debe ser mayor a 0";
+        errors.bottleCount = t.newLot.form.bottleCount.invalid;
       }
       if (!formData.priceUSDC.trim()) {
-        errors.priceUSDC = "El precio es requerido";
+        errors.priceUSDC = t.newLot.form.priceUSDC.required;
       } else if (parseFloat(formData.priceUSDC) <= 0) {
-        errors.priceUSDC = "El precio debe ser mayor a 0";
+        errors.priceUSDC = t.newLot.form.priceUSDC.invalid;
       }
     } else if (currentStep === 2) {
       if (uploadedFiles.length === 0) {
-        errors.files = "Debes subir al menos un archivo";
+        errors.files = t.newLot.documentation.filesRequired;
       }
     }
 
@@ -300,7 +302,7 @@ export default function NuevoLotePage() {
           className="inline-flex items-center gap-2 text-black hover:text-gray-800 mb-4 sm:mb-6 md:mb-8 transition-colors text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-          <span className="font-medium">Volver a Lotes</span>
+          <span className="font-medium">{t.newLot.backToLots}</span>
         </Link>
 
         {/* Header */}
@@ -311,10 +313,10 @@ export default function NuevoLotePage() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-black px-4">
-            Registrar Nuevo <span className="text-black">Lote</span>
+            {t.newLot.title} <span className="text-black">{t.newLot.titleHighlight}</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-black px-4">
-            Certifica un lote de vino y genera su Certificado de Autenticidad con la mejor tecnología
+            {t.newLot.subtitle}
           </p>
         </motion.div>
 
@@ -378,7 +380,7 @@ export default function NuevoLotePage() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">
-                Información del Lote
+                {t.newLot.form.lotInfo}
               </h2>
 
               <div>
@@ -386,7 +388,7 @@ export default function NuevoLotePage() {
                   htmlFor="wineName"
                   className="block text-sm font-medium text-black mb-2"
                 >
-                  Nombre del Lote/Vino <span className="text-black">*</span>
+                  {t.newLot.form.wineName.label} <span className="text-black">*</span>
                 </label>
                 <input
                   type="text"
@@ -394,7 +396,7 @@ export default function NuevoLotePage() {
                   name="wineName"
                   value={formData.wineName}
                   onChange={handleInputChange}
-                  placeholder="Ej: Malbec Reserva 2020"
+                  placeholder={t.newLot.form.wineName.placeholder}
                   className={cn(
                     "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
                     validationErrors.wineName ? "border-red-500" : "border-black"
@@ -412,7 +414,7 @@ export default function NuevoLotePage() {
                     htmlFor="varietal"
                     className="block text-sm font-medium text-black mb-2"
                   >
-                    Varietal <span className="text-black">*</span>
+                    {t.newLot.form.varietal.label} <span className="text-black">*</span>
                   </label>
                   <input
                     type="text"
@@ -420,7 +422,7 @@ export default function NuevoLotePage() {
                     name="varietal"
                     value={formData.varietal}
                     onChange={handleInputChange}
-                    placeholder="Ej: Malbec, Cabernet Sauvignon"
+                    placeholder={t.newLot.form.varietal.placeholder}
                     className={cn(
                       "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
                       validationErrors.varietal ? "border-red-500" : "border-black"
@@ -437,7 +439,7 @@ export default function NuevoLotePage() {
                     htmlFor="region"
                     className="block text-sm font-medium text-black mb-2"
                   >
-                    Región <span className="text-black">*</span>
+                    {t.newLot.form.region.label} <span className="text-black">*</span>
                   </label>
                   <input
                     type="text"
@@ -445,7 +447,7 @@ export default function NuevoLotePage() {
                     name="region"
                     value={formData.region}
                     onChange={handleInputChange}
-                    placeholder="Ej: Mendoza, Argentina"
+                    placeholder={t.newLot.form.region.placeholder}
                     className={cn(
                       "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
                       validationErrors.region ? "border-red-500" : "border-black"
@@ -464,7 +466,7 @@ export default function NuevoLotePage() {
                     htmlFor="vintage"
                     className="block text-sm font-medium text-black mb-2"
                   >
-                    Añada <span className="text-black">*</span>
+                    {t.newLot.form.vintage.label} <span className="text-black">*</span>
                   </label>
                   <input
                     type="text"
@@ -472,7 +474,7 @@ export default function NuevoLotePage() {
                     name="vintage"
                     value={formData.vintage}
                     onChange={handleInputChange}
-                    placeholder="Ej: 2020"
+                    placeholder={t.newLot.form.vintage.placeholder}
                     className={cn(
                       "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
                       validationErrors.vintage ? "border-red-500" : "border-black"
@@ -489,7 +491,7 @@ export default function NuevoLotePage() {
                     htmlFor="bottleCount"
                     className="block text-sm font-medium text-black mb-2"
                   >
-                    Cantidad de Botellas <span className="text-black">*</span>
+                    {t.newLot.form.bottleCount.label} <span className="text-black">*</span>
                   </label>
                   <input
                     type="number"
@@ -497,7 +499,7 @@ export default function NuevoLotePage() {
                     name="bottleCount"
                     value={formData.bottleCount}
                     onChange={handleInputChange}
-                    placeholder="Ej: 5000"
+                    placeholder={t.newLot.form.bottleCount.placeholder}
                     className={cn(
                       "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
                       validationErrors.bottleCount ? "border-red-500" : "border-black"
@@ -515,7 +517,7 @@ export default function NuevoLotePage() {
                     htmlFor="priceUSDC"
                     className="block text-sm font-medium text-black mb-2"
                   >
-                    Precio (USDC) <span className="text-black">*</span>
+                    {t.newLot.form.priceUSDC.label} <span className="text-black">*</span>
                   </label>
                   <input
                     type="number"
@@ -523,7 +525,7 @@ export default function NuevoLotePage() {
                     name="priceUSDC"
                     value={formData.priceUSDC}
                     onChange={handleInputChange}
-                    placeholder="Ej: 1500.50"
+                    placeholder={t.newLot.form.priceUSDC.placeholder}
                     step="0.01"
                     className={cn(
                       "w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent",
@@ -543,14 +545,14 @@ export default function NuevoLotePage() {
                   htmlFor="description"
                   className="block text-sm font-medium text-black mb-2"
                 >
-                  Descripción
+                  {t.newLot.form.description.label}
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Describe el lote: varietal, proceso de elaboración, características del terroir..."
+                  placeholder={t.newLot.form.description.placeholder}
                   rows={6}
                   className="w-full px-4 py-3 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none"
                 />
@@ -560,7 +562,7 @@ export default function NuevoLotePage() {
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">Documentación</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">{t.newLot.documentation.title}</h2>
               
               {/* Hidden file input */}
               <input
@@ -570,23 +572,23 @@ export default function NuevoLotePage() {
                 accept="image/*,.pdf,.doc,.docx"
                 onChange={handleFileChange}
                 className="hidden"
-                aria-label="Seleccionar archivos"
+                aria-label={t.newLot.documentation.selectFiles}
               />
 
               {/* Upload area */}
               <div className="text-center py-12">
                 <Upload className="w-16 h-16 text-black mx-auto mb-4" />
                 <p className="text-black mb-4">
-                  Sube certificados de autenticidad, fotos de las botellas y cualquier documentación relevante
+                  {t.newLot.documentation.uploadText}
                 </p>
                 <button
                   onClick={handleFileSelect}
                   className="px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
                 >
-                  Seleccionar Archivos
+                  {t.newLot.documentation.selectFiles}
                 </button>
                 <p className="text-xs text-gray-600 mt-2">
-                  Formatos aceptados: Imágenes (JPG, PNG), PDF, DOC, DOCX
+                  {t.newLot.documentation.acceptedFormats}
                 </p>
                 {validationErrors.files && (
                   <p className="mt-4 text-sm text-red-600 font-medium">{validationErrors.files}</p>
@@ -597,7 +599,7 @@ export default function NuevoLotePage() {
               {uploadedFiles.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-black">
-                    Archivos Subidos ({uploadedFiles.length})
+                    {t.newLot.documentation.uploadedFiles} ({uploadedFiles.length})
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {uploadedFiles.map((uploadedFile) => {
@@ -615,7 +617,7 @@ export default function NuevoLotePage() {
                           <button
                             onClick={() => handleRemoveFile(uploadedFile.id)}
                             className="absolute top-2 right-2 p-1 bg-black text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-800"
-                            aria-label={`Eliminar ${uploadedFile.file.name}`}
+                            aria-label={`${t.newLot.documentation.removeFile} ${uploadedFile.file.name}`}
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -644,7 +646,7 @@ export default function NuevoLotePage() {
                               {formatFileSize(uploadedFile.file.size)}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {uploadedFile.file.type || "Tipo desconocido"}
+                              {uploadedFile.file.type || t.newLot.documentation.fileType}
                             </p>
                           </div>
                         </motion.div>
@@ -659,23 +661,23 @@ export default function NuevoLotePage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">
-                Certificado de Vino
+                {t.newLot.certificate.title}
               </h2>
               <div className="text-center py-12">
                 <p className="text-base sm:text-lg md:text-xl text-black mb-8">
-                  Se generará un Certificado de Autenticidad único para este lote. El certificado representará este lote de forma inmutable usando la mejor tecnología.
+                  {t.newLot.certificate.description}
                 </p>
                 <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto border border-black">
-                  <div className="text-sm text-black mb-2">Lote a certificar</div>
+                  <div className="text-sm text-black mb-2">{t.newLot.certificate.lotToCertify}</div>
                   <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-4">
                     {formData.wineName || "N/A"}
                   </div>
                   <div className="text-sm text-black">
-                    {formData.bottleCount || "0"} botellas • {formData.region || "N/A"}
+                    {formData.bottleCount || "0"} {t.newLot.certificate.bottles} • {formData.region || "N/A"}
                   </div>
                 </div>
                 <p className="text-sm text-gray-600 mt-6">
-                  Una vez generado, el Certificado de Autenticidad quedará registrado permanentemente con la mejor tecnología
+                  {t.newLot.certificate.note}
                 </p>
               </div>
             </div>
@@ -683,38 +685,38 @@ export default function NuevoLotePage() {
 
           {currentStep === 4 && (
             <div className="space-y-6">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">Confirmar Certificación</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-5 md:mb-6 text-black">{t.newLot.confirm.title}</h2>
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-6 border border-black">
-                  <h3 className="font-semibold mb-4 text-black">Resumen del Lote</h3>
+                  <h3 className="font-semibold mb-4 text-black">{t.newLot.confirm.summary}</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-black">Lote/Vino:</span>
+                      <span className="text-black">{t.newLot.confirm.wineName}</span>
                       <span className="font-semibold text-black">{formData.wineName || "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Varietal:</span>
+                      <span className="text-black">{t.newLot.confirm.varietal}</span>
                       <span className="font-semibold text-black">{formData.varietal || "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Región:</span>
+                      <span className="text-black">{t.newLot.confirm.region}</span>
                       <span className="font-semibold text-black">{formData.region || "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Añada:</span>
+                      <span className="text-black">{t.newLot.confirm.vintage}</span>
                       <span className="font-semibold text-black">{formData.vintage || "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Cantidad:</span>
-                      <span className="font-semibold text-black">{formData.bottleCount || "N/A"} botellas</span>
+                      <span className="text-black">{t.newLot.confirm.bottleCount}</span>
+                      <span className="font-semibold text-black">{formData.bottleCount || "N/A"} {t.newLot.certificate.bottles}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Precio (USDC):</span>
+                      <span className="text-black">{t.newLot.confirm.price}</span>
                       <span className="font-semibold text-black">{formData.priceUSDC ? `${parseFloat(formData.priceUSDC).toLocaleString()} USDC` : "N/A"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-black">Documentos:</span>
-                      <span className="font-semibold text-black">{uploadedFiles.length} archivo(s)</span>
+                      <span className="text-black">{t.newLot.confirm.documents}</span>
+                      <span className="font-semibold text-black">{uploadedFiles.length} {t.newLot.confirm.files}</span>
                     </div>
                   </div>
                 </div>
@@ -722,7 +724,7 @@ export default function NuevoLotePage() {
                   onClick={handleCertifyLot}
                   className="w-full bg-black text-white py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
                 >
-                  Generar Certificado de Vino y Certificar Lote
+                  {t.newLot.confirm.certifyButton}
                 </button>
               </div>
             </div>
@@ -756,15 +758,15 @@ export default function NuevoLotePage() {
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black mb-4">
-                      ¡Lote Certificado Exitosamente!
+                      {t.newLot.success.title}
                     </h2>
                     <p className="text-base sm:text-lg text-gray-600 mb-8">
-                      Tu Certificado de Autenticidad ha sido generado y registrado con la mejor tecnología
+                      {t.newLot.success.description}
                     </p>
 
                     {/* Certificate Token Display */}
                     <div className="bg-black text-white rounded-xl p-4 sm:p-6 mb-8">
-                      <div className="text-xs sm:text-sm text-gray-300 mb-2">Certificado de Vino</div>
+                      <div className="text-xs sm:text-sm text-gray-300 mb-2">{t.newLot.success.certificateToken}</div>
                       <div className="text-lg sm:text-xl md:text-2xl font-mono font-bold break-all">
                         {wttToken}
                       </div>
@@ -775,7 +777,7 @@ export default function NuevoLotePage() {
                       <div className="flex items-center justify-center gap-2 mb-4">
                         <QrCode className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
                         <h3 className="text-lg sm:text-xl font-semibold text-black">
-                          Código QR de Trazabilidad
+                          {t.newLot.success.qrTitle}
                         </h3>
                       </div>
                       <div className="bg-white p-4 rounded-lg inline-block">
@@ -790,7 +792,7 @@ export default function NuevoLotePage() {
                         </div>
                       </div>
                       <p className="text-xs sm:text-sm text-gray-600 mt-4 max-w-xs mx-auto">
-                        Escanea este código para ver la trazabilidad completa del lote
+                        {t.newLot.success.qrDescription}
                       </p>
                     </div>
 
@@ -801,19 +803,19 @@ export default function NuevoLotePage() {
                         className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
                       >
                         <Download className="w-5 h-5" />
-                        Descargar QR
+                        {t.newLot.success.downloadQR}
                       </button>
                       <Link
                         href={`/lote/${lotId}`}
                         className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
                       >
-                        Ver Detalles del Lote
+                        {t.newLot.success.viewLotDetails}
                       </Link>
                       <Link
                         href="/lotes"
                         className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 text-black px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
                       >
-                        Volver a Lotes
+                        {t.newLot.success.backToLots}
                       </Link>
                     </div>
                   </div>
@@ -834,7 +836,7 @@ export default function NuevoLotePage() {
                   : "bg-gray-200 text-black hover:bg-gray-300"
               )}
             >
-              Anterior
+              {t.newLot.navigation.previous}
             </button>
 
             <button
@@ -851,7 +853,7 @@ export default function NuevoLotePage() {
                   : "bg-black text-white hover:bg-gray-800"
               )}
             >
-              {currentStep === 4 ? "Finalizar" : "Siguiente"}
+              {currentStep === 4 ? t.newLot.navigation.finish : t.newLot.navigation.next}
             </button>
           </div>
         </motion.div>

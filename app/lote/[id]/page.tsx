@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Wine, Calendar, MapPin, FileText, Plus, ExternalLink, QrCode, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const mockLote = {
   id: "demo",
@@ -39,6 +40,7 @@ const mockEvents = [
 ];
 
 export default function LotePage() {
+  const { t } = useLanguage();
   const params = useParams();
   const [events, setEvents] = useState(mockEvents);
   const [showModal, setShowModal] = useState(false);
@@ -67,7 +69,7 @@ export default function LotePage() {
           className="inline-flex items-center gap-2 text-black hover:text-gray-600 mb-6 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>Volver al Dashboard</span>
+          <span>{t.loteDetail.backToDashboard}</span>
         </Link>
 
         <motion.div
@@ -100,22 +102,22 @@ export default function LotePage() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <MapPin className="w-5 h-5" />
                     <div>
-                      <p className="text-xs text-gray-500">Región</p>
+                      <p className="text-xs text-gray-500">{t.loteDetail.region}</p>
                       <p className="font-semibold text-black">{mockLote.region}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="w-5 h-5" />
                     <div>
-                      <p className="text-xs text-gray-500">Año</p>
+                      <p className="text-xs text-gray-500">{t.loteDetail.year}</p>
                       <p className="font-semibold text-black">{mockLote.año}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Wine className="w-5 h-5" />
                     <div>
-                      <p className="text-xs text-gray-500">Cantidad</p>
-                      <p className="font-semibold text-black">{mockLote.cantidad} botellas</p>
+                      <p className="text-xs text-gray-500">{t.loteDetail.quantity}</p>
+                      <p className="font-semibold text-black">{mockLote.cantidad} {t.loteDetail.bottles}</p>
                     </div>
                   </div>
                 </div>
@@ -151,7 +153,7 @@ export default function LotePage() {
                     className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
                   >
                     <Plus className="w-4 h-4" />
-                    Registrar Evento
+                    {t.loteDetail.addEvent}
                   </button>
                 </div>
 
@@ -232,7 +234,7 @@ export default function LotePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-black">Registrar Evento</h3>
+                <h3 className="text-2xl font-bold text-black">{t.loteDetail.addEvent}</h3>
                 <button
                   onClick={() => setShowModal(false)}
                   className="text-gray-500 hover:text-black transition-colors"
@@ -244,7 +246,7 @@ export default function LotePage() {
               <form onSubmit={handleSubmitEvent} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-black mb-2">
-                    Tipo de Evento
+                    {t.loteDetail.eventName}
                   </label>
                   <select
                     value={newEvent.evento}
@@ -264,7 +266,7 @@ export default function LotePage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-black mb-2">
-                    Fecha
+                    {t.loteDetail.eventDate}
                   </label>
                   <input
                     type="date"
@@ -277,7 +279,7 @@ export default function LotePage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-black mb-2">
-                    Descripción
+                    {t.loteDetail.eventDescription}
                   </label>
                   <textarea
                     value={newEvent.descripcion}
@@ -294,14 +296,14 @@ export default function LotePage() {
                     type="submit"
                     className="flex-1 bg-black text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
                   >
-                    Registrar
+                    {t.loteDetail.add}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="flex-1 bg-white text-black px-4 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
                   >
-                    Cancelar
+                    {t.loteDetail.cancel}
                   </button>
                 </div>
               </form>
