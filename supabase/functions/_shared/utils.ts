@@ -18,6 +18,48 @@ export const WINE_STATUS = {
 
 export type WineStatus = (typeof WINE_STATUS)[keyof typeof WINE_STATUS];
 
+// Production lifecycle statuses for lot-level traceability
+export const LOT_STATUS = {
+  HARVESTED: "harvested",
+  FERMENTED: "fermented",
+  AGED: "aged",
+  BOTTLED: "bottled",
+  SHIPPED: "shipped",
+  AVAILABLE: "available",
+  SOLD_OUT: "sold_out",
+  RECALLED: "recalled",
+} as const;
+
+export type LotStatus = (typeof LOT_STATUS)[keyof typeof LOT_STATUS];
+
+// Individual bottle statuses for bottle-level traceability
+export const BOTTLE_STATUS = {
+  BOTTLED: "bottled",
+  IN_WAREHOUSE: "in_warehouse",
+  SHIPPED: "shipped",
+  IN_TRANSIT: "in_transit",
+  DELIVERED: "delivered",
+  SCANNED: "scanned",
+  CONSUMED: "consumed",
+  LOST: "lost",
+  DAMAGED: "damaged",
+} as const;
+
+export type BottleStatus = (typeof BOTTLE_STATUS)[keyof typeof BOTTLE_STATUS];
+
+// Scan types for bottle tracking
+export const SCAN_TYPE = {
+  WAREHOUSE_IN: "warehouse_in",
+  WAREHOUSE_OUT: "warehouse_out",
+  SHIPPING: "shipping",
+  DELIVERY: "delivery",
+  RETAIL_SCAN: "retail_scan",
+  CONSUMER_SCAN: "consumer_scan",
+  VERIFICATION: "verification",
+} as const;
+
+export type ScanType = (typeof SCAN_TYPE)[keyof typeof SCAN_TYPE];
+
 export function nowIso(): string {
   return new Date().toISOString();
 }

@@ -115,8 +115,12 @@ Deno.serve(async (req) => {
     // Get factory ID from environment
     const factoryId = Deno.env.get("WINE_FACTORY_ID");
     if (!factoryId) {
+      console.error("WINE_FACTORY_ID not configured in environment variables");
       return new Response(
-        JSON.stringify({ error: "Factory not configured" }),
+        JSON.stringify({ 
+          error: "Factory not configured. Please set WINE_FACTORY_ID in Supabase edge function secrets.",
+          details: "The wine factory contract ID must be configured to create tokens."
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -124,16 +128,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the wine token
-    const { hash, tokenAddress } = await createWineToken(
-      factoryId,
-      walletSecret,
-      wallet.public_key,
-      decimal,
-      name,
-      symbol,
-      wine_metadata as WineLotMetadata,
-    );
+    // Create the wine token on blockchain
+    let hash: string;
+    let tokenAddress: string;
+    
+    try {
+      const result = await createWineToken(
+        factoryId,
+        walletSecret,
+        wallet.public_key,
+        decimal,
+        name,
+        symbol,
+        wine_metadata as WineLotMetadata,
+      );
+      hash = result.hash;
+      tokenAddress = result.tokenAddress;
+    } catch (blockchainError) {
+      console.error("Blockchain token creation failed:", blockchainError);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to create token on blockchain",
+          details: blockchainError instanceof Error ? blockchainError.message : "Unknown blockchain error",
+          suggestion: "Please check that the factory contract is deployed and the wallet has sufficient XLM for transaction fees.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Store token in database
     const { data: tokenRecord, error: insertError } = await supabase

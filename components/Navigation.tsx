@@ -1,15 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Wine, Home, Package, QrCode, Menu, X, ShoppingCart } from "lucide-react";
+import { Wine, Home, Package, QrCode, Menu, X, ShoppingCart, LogIn, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabaseClient } from "@/lib/supabaseClient";
+import type { Session } from "@supabase/supabase-js";
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Get session on mount and listen for changes
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setIsLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabaseClient.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   // Close mobile menu when clicking outside or on escape key
   useEffect(() => {
@@ -118,6 +147,38 @@ export default function Navigation() {
               <ctaItem.icon className="w-5 h-5" strokeWidth={1.5} aria-hidden="true" />
               <span>{ctaItem.label}</span>
             </Link>
+
+            {/* Auth Buttons */}
+            {!isLoading && (
+              <>
+                {session ? (
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <User className="w-5 h-5" strokeWidth={1.5} />
+                      <span>Dashboard</span>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" strokeWidth={1.5} />
+                      <span>Salir</span>
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-black hover:text-white border border-gray-300 hover:border-black transition-colors"
+                  >
+                    <LogIn className="w-5 h-5" strokeWidth={1.5} />
+                    <span>Iniciar Sesión</span>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -179,6 +240,49 @@ export default function Navigation() {
                   <span>{ctaItem.label}</span>
                 </Link>
               </li>
+
+              {/* Mobile Auth */}
+              {!isLoading && (
+                <>
+                  {session ? (
+                    <>
+                      <li className="px-4">
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors touch-manipulation"
+                        >
+                          <User className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                          <span>Dashboard</span>
+                        </Link>
+                      </li>
+                      <li className="px-4">
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors touch-manipulation"
+                        >
+                          <LogOut className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                          <span>Salir</span>
+                        </button>
+                      </li>
+                    </>
+                  ) : (
+                    <li className="px-4">
+                      <Link
+                        href="/auth/login"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium bg-gray-100 text-gray-700 hover:bg-black hover:text-white transition-colors touch-manipulation"
+                      >
+                        <LogIn className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+                        <span>Iniciar Sesión</span>
+                      </Link>
+                    </li>
+                  )}
+                </>
+              )}
             </ul>
           </div>
         )}

@@ -159,6 +159,53 @@ export default function TrazabilidadPage() {
       setIsLoading(true);
       setErrorMessage(null);
 
+      // Try new wine lots API first (using token_id)
+      const lotStatusEndpoint = `${supabaseUrl}/functions/v1/wine-lots-get-history?token_id=${encodeURIComponent(identifierValueToUse)}&include_metadata=true`;
+      const lotStatusResponse = await fetch(lotStatusEndpoint, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (lotStatusResponse.ok) {
+        const lotData = await lotStatusResponse.json();
+        
+        // Transform to expected format
+        const transformedLot: LotData = {
+          id: lotData.token.id,
+          lotId: lotData.token.wine_metadata?.lot_id || null,
+          wineryName: lotData.token.wine_metadata?.winery_name || lotData.token.name,
+          region: lotData.token.wine_metadata?.region || null,
+          country: lotData.token.wine_metadata?.country || null,
+          appellation: null,
+          vineyard: null,
+          vintage: lotData.token.wine_metadata?.vintage || null,
+          bottleFormatMl: null,
+          bottleCount: lotData.token.wine_metadata?.bottle_count || null,
+          description: lotData.token.wine_metadata?.description || null,
+          tokenCode: lotData.token.symbol,
+          status: lotData.current_status?.status || null,
+          documentationUrls: null,
+          tokenMetadata: lotData.token.wine_metadata || null,
+          createdAt: null,
+          updatedAt: null,
+        };
+
+        const transformedEvents: TraceEvent[] = (lotData.history || []).map((event: any) => ({
+          id: event.id,
+          eventType: event.status,
+          actorAddress: event.handler_name || null,
+          description: event.notes || `Estado cambiado a ${event.status}`,
+          timestamp: event.event_timestamp,
+          onChainTxHash: event.transaction_hash || null,
+        }));
+
+        setLot(transformedLot);
+        setEvents(transformedEvents);
+        return;
+      }
+
+      // Fallback to old API
       const endpoint = `${supabaseUrl}/functions/v1/get-bottle-traceability?${identifierType}=${encodeURIComponent(identifierValueToUse)}`;
       const response = await fetch(endpoint, {
         headers: {

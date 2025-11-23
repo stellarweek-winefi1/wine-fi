@@ -195,3 +195,5 @@ curl -X POST "https://your-project.supabase.co/functions/v1/wine-tokens-create" 
 - ⚠️ Rotate `ENCRYPTION_KEY` requires re-encrypting all wallet secrets
 - ✅ Use different keys for development and production
 - ✅ Store production secrets in secure vault (not just Supabase dashboard)
+
+

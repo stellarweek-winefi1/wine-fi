@@ -267,21 +267,29 @@ Vinifica es una plataforma para digitalizar los vinos que permite a los dueños 
 - `/eventos/registrar` - Formulario para registrar eventos de trazabilidad y daños
 
 ### Backend / Services
-- **Runtime**: Node.js
-- **Framework**: Next.js API Routes o Express.js
+- **Platform**: Supabase (PostgreSQL + Edge Functions)
+- **Runtime**: Deno (Edge Functions)
 - **Stellar Integration**: 
-  - Servicio para crear y gestionar WTT en Stellar
-  - Servicio para registrar eventos de trazabilidad
+  - Edge Functions para crear y gestionar tokens de vino en Stellar
+  - Edge Functions para registrar eventos de trazabilidad
   - Integración con Soroban para smart contracts
+  - Gestión de wallets custodiales para usuarios
 
-**API Endpoints (planned):**
-- `POST /api/lotes` - Crear nuevo lote y generar WTT
-- `GET /api/lotes` - Listar todos los lotes
-- `GET /api/lotes/[id]` - Obtener detalles de un lote
-- `POST /api/eventos` - Registrar evento de trazabilidad
-- `GET /api/eventos/[loteId]` - Obtener eventos de un lote
-- `GET /api/qr/[code]` - Verificar QR y obtener información del lote
-- `POST /api/transferencias` - Transferir ownership de un lote
+**Supabase Edge Functions:**
+- `wine-tokens-create` - Crear nuevo token de lote de vino (WTT) en blockchain
+- `wine-tokens-mint` - Acuñar tokens de vino a direcciones
+- `wine-tokens-transfer` - Transferir tokens entre wallets
+- `wine-lots-get-history` - Obtener historial de eventos de un lote
+- `wine-lots-update-status` - Actualizar estado de un lote
+- `wine-bottles-mint` - Crear registros de botellas individuales
+- `wine-bottles-get-traceability` - Obtener trazabilidad completa de una botella (público)
+- `wine-bottles-update-status` - Actualizar estado de una botella
+- `wallets-provision` - Crear o obtener wallet custodial
+- `wallets-default` - Obtener wallet por defecto del usuario
+- `wallets-sign-payment` - Firmar y enviar pagos Stellar
+- `wallets-auto-create` - Crear wallet automáticamente (trigger)
+
+Ver documentación completa en `supabase/functions/README.md`
 
 ### Smart Contracts (Soroban)
 - **Traceability Contract**: 
@@ -294,21 +302,29 @@ Vinifica es una plataforma para digitalizar los vinos que permite a los dueños 
 **Lenguaje**: Rust (Soroban)
 
 ### Data / Storage
-- **Database**: PostgreSQL o Supabase
-  - Información de lotes (metadatos)
-  - Documentos de certificación
-  - Usuarios y roles
-  - Eventos de trazabilidad (cache local, fuente de verdad en Stellar)
+- **Database**: Supabase (PostgreSQL)
+  - `wine_tokens` - Tokens de lotes de vino desplegados en blockchain
+  - `wine_token_holdings` - Balances de tokens de usuarios (caché)
+  - `wine_token_transactions` - Historial de transacciones
+  - `wine_lot_status_events` - Eventos de estado a nivel de lote
+  - `wine_bottles` - Registros de botellas individuales con NFTs
+  - `bottle_status_events` - Eventos de estado a nivel de botella
+  - `bottle_qr_codes` - Mapeo de códigos QR
+  - `user_wallets` - Wallets custodiales de usuarios
+  - `wallet_activity_logs` - Registro de actividad de wallets
+  - Usuarios y autenticación (Supabase Auth)
 
-- **Blockchain**: Stellar Network
-  - Wine Traceability Tokens (WTT) representando lotes
+- **Blockchain**: Stellar Network (Soroban)
+  - Wine Tokens (contratos Soroban) representando lotes
+  - Factory Contract para crear tokens
   - Eventos de trazabilidad registrados en cadena
-  - Transferencias de ownership
-  - Validación de roles
+  - Transferencias verificadas
+  - NFTs para botellas individuales
 
-- **File Storage**: 
-  - Documentos de certificación (Supabase Storage, AWS S3, o IPFS)
+- **File Storage**: Supabase Storage
+  - Bucket `wine-lots` - Documentos de certificación
   - Imágenes de lotes y botellas
+  - Archivos de documentación
 
 ### Architecture Diagram
 
@@ -322,34 +338,45 @@ Vinifica es una plataforma para digitalizar los vinos que permite a los dueños 
 ┌─────────────────────────────────────┐
 │         Frontend (Next.js)          │
 │  - React Components                 │
-│  - Stellar SDK Integration          │
+│  - Supabase Client                  │
 │  - QR Code Generation               │
 │  - Dashboard & Forms                │
 └──────┬──────────────────┬───────────┘
        │                  │
        │                  │
        ▼                  ▼
-┌──────────────┐   ┌──────────────┐
-│   Backend    │   │   Stellar    │
-│  (API Routes)│   │   Network    │
-│              │   │              │
-│  - Business  │   │  - WTT       │
-│    Logic     │◄──┤  - Events    │
-│  - Auth      │   │  - Soroban   │
-│  - File      │   │    Contracts │
-│    Upload    │   │              │
-└──────┬───────┘   └──────────────┘
+┌──────────────────┐   ┌──────────────┐
+│   Supabase       │   │   Stellar    │
+│   Edge Functions │   │   Network    │
+│                  │   │              │
+│  - wine-tokens-  │   │  - Wine      │
+│    create        │◄──┤    Tokens    │
+│  - wine-lots-    │   │  - Factory   │
+│    update-status │   │    Contract  │
+│  - wallets-*     │   │  - Soroban   │
+│  - File Upload   │   │    Contracts │
+└──────┬───────────┘   └──────────────┘
        │
        ▼
-┌──────────────┐
-│  PostgreSQL  │
-│  / Supabase  │
-│              │
-│  - Lotes     │
-│  - Eventos   │
-│  - Users     │
-│  - Docs      │
-└──────────────┘
+┌──────────────────────────┐
+│   Supabase (PostgreSQL)   │
+│                           │
+│  - wine_tokens           │
+│  - wine_lot_status_events│
+│  - wine_bottles          │
+│  - bottle_status_events  │
+│  - user_wallets          │
+│  - Auth (users)          │
+└──────────────────────────┘
+       │
+       ▼
+┌──────────────────────────┐
+│   Supabase Storage       │
+│                           │
+│  - wine-lots bucket      │
+│  - Documentos            │
+│  - Imágenes              │
+└──────────────────────────┘
 ```
 
 ---
@@ -415,21 +442,87 @@ npm start
 
 ### Environment Variables
 
-Create a `.env.local` file:
+Create a `.env.local` file in the root directory:
 
 ```env
+# Supabase Configuration (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Stellar Network Configuration (Optional, defaults shown)
 NEXT_PUBLIC_STELLAR_NETWORK=testnet
 NEXT_PUBLIC_STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
 NEXT_PUBLIC_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
-DATABASE_URL=your_database_url
 ```
+
+### Supabase Setup
+
+1. **Create Supabase Project**
+   - Go to https://app.supabase.com
+   - Create a new project
+   - Copy your project URL and anon key
+
+2. **Run Database Migrations**
+   ```bash
+   # Link your project
+   supabase link --project-ref your-project-ref
+   
+   # Apply migrations
+   supabase db push
+   ```
+
+3. **Deploy Edge Functions**
+   ```bash
+   # Deploy all functions
+   supabase functions deploy wine-tokens-create
+   supabase functions deploy wine-tokens-mint
+   supabase functions deploy wine-tokens-transfer
+   supabase functions deploy wine-lots-get-history
+   supabase functions deploy wine-lots-update-status
+   supabase functions deploy wine-bottles-mint
+   supabase functions deploy wine-bottles-get-traceability
+   supabase functions deploy wine-bottles-update-status
+   supabase functions deploy wallets-provision
+   supabase functions deploy wallets-default
+   supabase functions deploy wallets-sign-payment
+   supabase functions deploy wallets-auto-create
+   ```
+
+4. **Configure Edge Function Secrets**
+   - Go to Supabase Dashboard → Settings → Edge Functions → Secrets
+   - Set required secrets:
+     ```bash
+     ENCRYPTION_KEY=<generate with: openssl rand -base64 32>
+     STELLAR_NETWORK=TESTNET
+     STELLAR_RPC_URL=https://soroban-testnet.stellar.org
+     STELLAR_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+     WINE_FACTORY_ID=<your-factory-contract-address>
+     TOKEN_WASM_HASH=<your-token-wasm-hash>
+     ```
+
+5. **Create Storage Bucket**
+   - Go to Supabase Dashboard → Storage
+   - Create bucket named `wine-lots`
+   - Set it to public or configure RLS policies
 
 ### Stellar Setup
 
-1. Create a Stellar testnet account
-2. Fund it with testnet lumens
-3. Configure your environment variables
-4. Deploy Soroban contracts (when ready)
+1. **Deploy Smart Contracts**
+   ```bash
+   cd contracts
+   ./deploy_wine_token.sh testnet your-account
+   source .deployed_wine_token_testnet.env
+   ```
+
+2. **Update Edge Function Secrets**
+   - Set `WINE_FACTORY_ID` and `TOKEN_WASM_HASH` from deployment
+
+3. **Fund Test Accounts**
+   - Use Stellar Friendbot for testnet: https://laboratory.stellar.org/#account-creator?network=testnet
+
+Ver documentación completa:
+- Edge Functions: `supabase/functions/README.md`
+- Smart Contracts: `contracts/README.md`
 
 ---
 

@@ -171,3 +171,5 @@ COMMENT ON TABLE public.wine_token_transactions IS 'Complete history of wine tok
 COMMENT ON COLUMN public.wine_tokens.wine_metadata IS 'JSON object containing: lot_id, winery_name, region, country, vintage, varietal, bottle_count, description, token_code';
 COMMENT ON COLUMN public.wine_token_holdings.balance IS 'Cached balance, periodically synced with blockchain';
 COMMENT ON COLUMN public.wine_token_transactions.transaction_type IS 'Type of transaction: mint, transfer, or burn';
+
+

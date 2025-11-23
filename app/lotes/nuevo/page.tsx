@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon, Download, QrCode, Loader2, AlertCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Wine, Upload, DollarSign, CheckCircle, X, File, Image as ImageIcon, Download, QrCode, Loader2, AlertCircle, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import StatusManager from "./components/StatusManager";
+import { getCurrentLotStatusByAddress } from "@/lib/wine-tokens";
 
 const steps = [
   {
@@ -43,6 +46,7 @@ interface UploadedFile {
 }
 
 export default function NuevoLotePage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     wineName: "",
@@ -58,10 +62,29 @@ export default function NuevoLotePage() {
   const [isCertified, setIsCertified] = useState(false);
   const [wttToken, setWttToken] = useState<string>("");
   const [lotId, setLotId] = useState<string>("");
+  const [transactionHash, setTransactionHash] = useState<string>("");
+  const [tokenAddress, setTokenAddress] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [savedLotId, setSavedLotId] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
+  const [showStatusManager, setShowStatusManager] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        router.push(`/auth/login?redirect=${encodeURIComponent("/lotes/nuevo")}`);
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   // Validation functions
   const isStep1Complete = () => {
@@ -199,9 +222,16 @@ export default function NuevoLotePage() {
     setSubmitError(null);
 
     try {
-      // Generate Certificate token and lot ID
-      const token = generateWTTToken();
+      // Get authenticated user session
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error("Debes iniciar sesión para crear un lote. Por favor, inicia sesión e intenta nuevamente.");
+      }
+
+      // Generate lot ID and token code
       const id = generateLotId();
+      const tokenCode = generateWTTToken().substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12);
 
       // Extract region and country from region field (format: "City, Country")
       const regionParts = formData.region.split(',').map(s => s.trim());
@@ -217,138 +247,75 @@ export default function NuevoLotePage() {
         }
       }
 
-      // Prepare lot data for Supabase
-      // Note: After migration 20241122_bottles_traceability, these fields were removed:
-      // - price_per_bottle_usd
-      // - distribution_public_key
-      // - distribution_secret_encrypted
-      // - distribution_tx_hash
-      // - distributed_at
-      // - platform_fee_bps
-      const lotData = {
+      // Generate symbol from wine name (first 3-4 letters + vintage)
+      const symbol = formData.wineName
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 4) + formData.vintage.slice(-2);
+
+      // Prepare wine_metadata matching WineLotMetadata type
+      const wine_metadata = {
         lot_id: id,
         winery_name: formData.wineName,
         region: region,
         country: country,
         vintage: parseInt(formData.vintage),
+        varietal: formData.varietal,
         bottle_count: parseInt(formData.bottleCount),
-        total_bottles: parseInt(formData.bottleCount),
-        bottle_format_ml: 750, // Default or make it configurable
         description: formData.description || null,
+        token_code: tokenCode,
+        // Additional metadata
+        price_usdc: parseFloat(formData.priceUSDC),
         documentation_urls: documentationUrls,
-        token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
-        issuer_public_key: 'TBD', // Placeholder - will be filled when token is issued (required field)
-        status: 'created',
-        token_metadata: {
-          varietal: formData.varietal,
-          wineName: formData.wineName,
-          priceUSDC: parseFloat(formData.priceUSDC), // Store price in metadata since column was removed
-        },
       };
 
-      // Insert into Supabase
-      let finalLotId: string | null = null;
-      const { data: insertedLot, error: insertError } = await supabaseClient
-        .from('wine_lots')
-        .insert(lotData)
-        .select()
-        .single();
+      // Call wine-tokens-create edge function
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error("NEXT_PUBLIC_SUPABASE_URL no está configurado");
+      }
 
-      if (insertError) {
-        console.error('Supabase insert error:', insertError);
-        // Check if error is related to missing columns (lot_id, total_bottles) from migration
-        const isSchemaCacheError = insertError.message.includes('lot_id') || 
-                                  insertError.message.includes('total_bottles') ||
-                                  insertError.message.includes('schema cache');
-        
-        if (isSchemaCacheError) {
-          // Try inserting without new columns (migration not applied yet)
-          const legacyLotData = {
-            winery_name: formData.wineName,
-            region: region,
-            country: country,
-            vintage: parseInt(formData.vintage),
-            bottle_count: parseInt(formData.bottleCount),
-            bottle_format_ml: 750,
-            description: formData.description || null,
-            documentation_urls: documentationUrls || [],
-            token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
-            issuer_public_key: 'TBD', // Required field - placeholder until token is issued
-            // These fields may still be required by old schema
-            distribution_public_key: 'TBD',
-            distribution_secret_encrypted: 'TBD',
-            price_per_bottle_usd: parseFloat(formData.priceUSDC),
-            platform_fee_bps: 1000,
-            status: 'created',
-            token_metadata: {
-              varietal: formData.varietal,
-              wineName: formData.wineName,
-              priceUSDC: parseFloat(formData.priceUSDC),
-              lot_id: id, // Store lot_id in metadata for now
-            },
-          };
+      const response = await fetch(`${supabaseUrl}/functions/v1/wine-tokens-create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: formData.wineName,
+          symbol: symbol,
+          decimal: 0,
+          wine_metadata: wine_metadata,
+        }),
+      });
 
-          const { data: retryData, error: retryError } = await supabaseClient
-            .from('wine_lots')
-            .insert(legacyLotData)
-            .select()
-            .single();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        throw new Error(errorData.error || `Error al crear el token: ${response.statusText}`);
+      }
 
-          if (retryError) {
-            throw new Error(`Error saving lot: ${retryError.message}. Please ensure migrations are applied.`);
-          }
-          
-          finalLotId = retryData.id;
-          setSavedLotId(retryData.id);
-        } else if (insertError.message.includes('null value') || insertError.message.includes('violates not-null')) {
-          // Try inserting with minimal required fields (migration applied)
-          const simplifiedLotData = {
-            lot_id: id,
-            winery_name: formData.wineName,
-            region: region,
-            country: country,
-            vintage: parseInt(formData.vintage),
-            bottle_count: parseInt(formData.bottleCount),
-            total_bottles: parseInt(formData.bottleCount),
-            bottle_format_ml: 750,
-            description: formData.description || null,
-            documentation_urls: documentationUrls || [],
-            token_code: token.substring(0, 12).toUpperCase() || id.toUpperCase().substring(0, 12),
-            issuer_public_key: 'TBD', // Required field - placeholder until token is issued
-            status: 'created',
-            token_metadata: {
-              varietal: formData.varietal,
-              wineName: formData.wineName,
-              priceUSDC: parseFloat(formData.priceUSDC), // Store price in metadata
-            },
-          };
+      const result = await response.json();
 
-          const { data: retryData, error: retryError } = await supabaseClient
-            .from('wine_lots')
-            .insert(simplifiedLotData)
-            .select()
-            .single();
-
-          if (retryError) {
-            throw new Error(`Error saving lot: ${retryError.message}`);
-          }
-          
-          finalLotId = retryData.id;
-          setSavedLotId(retryData.id);
-        } else {
-          throw new Error(`Error saving lot: ${insertError.message}`);
-        }
-      } else {
-        finalLotId = insertedLot.id;
-        setSavedLotId(insertedLot.id);
+      if (!result.success || !result.token) {
+        throw new Error("Error al crear el token de vino. Por favor, intenta nuevamente.");
       }
 
       // Set state for success UI
-      setWttToken(token);
+      setTokenAddress(result.token.address);
+      setWttToken(result.token.address); // Keep for backward compatibility
       setLotId(id);
+      setTransactionHash(result.token.transaction_hash);
+      setSavedLotId(result.token.address); // Use token address as identifier
       setIsCertified(true);
       
-      console.log("Lot saved successfully:", { token, id, dbLotId: finalLotId });
+      // Load current status (if any)
+      await loadCurrentStatus(result.token.address);
+      
+      console.log("Token creado exitosamente:", {
+        tokenAddress: result.token.address,
+        transactionHash: result.token.transaction_hash,
+        lotId: id,
+      });
     } catch (error) {
       console.error("Error certifying lot:", error);
       setSubmitError(
@@ -358,6 +325,32 @@ export default function NuevoLotePage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const loadCurrentStatus = async (tokenAddr: string) => {
+    if (!tokenAddr) return;
+    
+    setIsLoadingStatus(true);
+    try {
+      const statusEvent = await getCurrentLotStatusByAddress(tokenAddr);
+      if (statusEvent) {
+        setCurrentStatus(statusEvent.status);
+      }
+    } catch (error) {
+      console.error("Error loading status:", error);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  const handleStatusUpdated = async (event: any) => {
+    if (event && event.status) {
+      setCurrentStatus(event.status);
+    }
+    // Reload status to get latest
+    if (tokenAddress) {
+      await loadCurrentStatus(tokenAddress);
     }
   };
 
@@ -481,6 +474,18 @@ export default function NuevoLotePage() {
     }
     return File;
   };
+
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <main className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-black" />
+          <p className="text-gray-600">Verificando autenticación...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8 md:py-12 px-4 sm:px-6 lg:px-8">
@@ -976,11 +981,76 @@ export default function NuevoLotePage() {
                     </p>
 
                     {/* Certificate Token Display */}
-                    <div className="bg-black text-white rounded-xl p-4 sm:p-6 mb-8">
-                      <div className="text-xs sm:text-sm text-gray-300 mb-2">Certificado de Vino</div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-mono font-bold break-all">
-                        {wttToken}
+                    <div className="bg-black text-white rounded-xl p-4 sm:p-6 mb-8 space-y-4">
+                      <div>
+                        <div className="text-xs sm:text-sm text-gray-300 mb-2">Dirección del Token (Blockchain)</div>
+                        <div className="text-lg sm:text-xl md:text-2xl font-mono font-bold break-all">
+                          {tokenAddress || wttToken}
+                        </div>
                       </div>
+                      {transactionHash && (
+                        <div>
+                          <div className="text-xs sm:text-sm text-gray-300 mb-2">Hash de Transacción</div>
+                          <div className="text-sm sm:text-base font-mono break-all text-gray-200">
+                            {transactionHash}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-xs sm:text-sm text-gray-300 mb-2">ID del Lote</div>
+                        <div className="text-sm sm:text-base font-mono break-all text-gray-200">
+                          {lotId}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Section */}
+                    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 border-2 border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Settings className="w-5 h-5 text-black" />
+                          <h3 className="text-lg sm:text-xl font-semibold text-black">
+                            Estado del Lote
+                          </h3>
+                        </div>
+                        {tokenAddress && (
+                          <button
+                            onClick={() => setShowStatusManager(true)}
+                            className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
+                          >
+                            <Settings className="w-4 h-4" />
+                            {currentStatus ? "Actualizar Estado" : "Establecer Estado"}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {isLoadingStatus ? (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Cargando estado...</span>
+                        </div>
+                      ) : currentStatus ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Estado actual:</span>
+                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold capitalize">
+                              {currentStatus}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            El estado está registrado en la blockchain para trazabilidad inmutable
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">
+                            No se ha establecido un estado inicial para este lote.
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Establece el estado inicial para comenzar el seguimiento del ciclo de vida del vino.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* QR Code */}
@@ -1016,13 +1086,15 @@ export default function NuevoLotePage() {
                         <Download className="w-5 h-5" />
                         Descargar QR
                       </button>
-                      <Link
-                        href={`/lote/${lotId}`}
-                        className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
-                      >
-                        Ver Detalles del Lote
-                      </Link>
-                      {savedLotId && (
+                      {tokenAddress && (
+                        <Link
+                          href={`/lote/${tokenAddress}`}
+                          className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
+                        >
+                          Ver Detalles del Token
+                        </Link>
+                      )}
+                      {lotId && (
                         <Link
                           href={`/trazabilidad/${lotId}`}
                           className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold border-2 border-black hover:bg-gray-50 transition-colors"
@@ -1038,6 +1110,44 @@ export default function NuevoLotePage() {
                       </Link>
                     </div>
                   </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Status Manager Modal */}
+          <AnimatePresence>
+            {showStatusManager && tokenAddress && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+                onClick={() => setShowStatusManager(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto border-2 border-black"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-black">Gestionar Estado del Lote</h3>
+                    <button
+                      onClick={() => setShowStatusManager(false)}
+                      className="text-gray-500 hover:text-black transition-colors"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  
+                  <StatusManager
+                    tokenAddress={tokenAddress}
+                    currentStatus={currentStatus}
+                    onStatusUpdated={handleStatusUpdated}
+                    onClose={() => setShowStatusManager(false)}
+                  />
                 </motion.div>
               </motion.div>
             )}

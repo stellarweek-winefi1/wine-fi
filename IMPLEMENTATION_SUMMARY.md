@@ -266,3 +266,5 @@ The wine token system is now fully integrated with your invisible wallet infrast
 4. View holdings → Real-time balance tracking
 
 All without users needing to understand blockchain, manage keys, or handle cryptocurrency directly. The system is production-ready after applying migrations and deploying edge functions.
+
+
